@@ -1,4 +1,4 @@
-=== WP e-Commerce ===
+=== Wordpress Wiki ===
 Contributors: Dan Milward, Thomas Howard, Allen Han
 Donate link: http://www.instinct.co.nz/
 Tags: wiki
