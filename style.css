@@ -1,14 +1,14 @@
 div.contents {
 	background: #f1f1f1;
-	border: 1px solid #dadada;
+	border: 5px solid #dadada;
 	-webkit-border-radius: 3px;
 	float: right;
 	margin-left: 16px;
 	padding: 4px 8px;
 	margin-bottom: 12px;
 	font-size: 85%;
-	max-width: 30%;
-        margin-right: -20px;
+	max-width: 45%;
+    
 }
 
 div.contents ol li {
@@ -17,16 +17,13 @@ div.contents ol li {
 	list-style-position:outside;
 	font-family:"Lucida Grande",Verdana,"Bitstream Vera Sans",Arial,sans-serif;
 	font-size: 85%;
-	text-indent: -18px;
-}
+	}
 
 div.contents ol li.lvl2 {
 	margin-left: 20px;	
 }
 
-div.contents ol {
-	margin-left: -20px;
-}
+
 
 div.contents a:hover {
 	color:#D54E21;
@@ -49,7 +46,12 @@ div.contents h3 {
         margin-top: 0px;
 }
 
-div.contents a.hide {
+div.contents a.hide, div.contents a.show {
 	cursor: pointer;
 	font-size: 85%;
+}
+div.contents a.hide, div.contents a.show {
+	cursor: pointer;
+	font-size: 85%;
+  display: inline;
 }
