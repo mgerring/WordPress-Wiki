@@ -3,11 +3,10 @@
 Plugin Name:WordPress Wiki
 Plugin URI: http://wordpress.org/extend/plugins/wordpress-wiki/
 Description: Add Wiki functionality to your wordpress site.
-Version: 0.5
+Version: 0.6
 Author: Instinct Entertainment
 Author URI: http://www.instinct.co.nz
 /* Major version for "major" releases */
-
 
 /**
 * Guess the wp-content and plugin urls/paths
@@ -39,18 +38,19 @@ if ( ! get_role('wiki_editor')){
 //	,'delete_posts'=>true
 //	,'delete_published_posts'=>true
 //	,'publish_posts'=>true
-	,'publish_pages'=>true
-	,'delete_pages'=>true
-	,'edit_pages'=>true
-	,'edit_others_pages'=>true
-	,'edit_published_pages'=>true
-	,'delete_published_pages'=>true
+//
+//	,'publish_pages'=>true
+//	,'delete_pages'=>true
+//	,'edit_pages'=>true
+//	,'edit_others_pages'=>true
+//	,'edit_published_pages'=>true
+//	,'delete_published_pages'=>true
 	,'edit_wiki'=>true);
     $wp_roles->add_role('wiki_editor', 'Wiki Editor',$role_capabilities);
 }
 
 
-$role = get_role('administrator');
+$role = get_role('wiki_editor');
 $role->add_cap('edit_wiki');
 
 function wiki_post_revisions($content='') {
@@ -110,6 +110,7 @@ function wiki_post_revisions($content='') {
 		$k++;
 	}
 	$wpsc_members_data = get_post_meta($post->ID,'wiki_page');
+	
 	if (current_user_can('edit_wiki') && (is_array($wpsc_members_data) && ($wpsc_members_data[0] == 1)) && current_user_can('edit_pages')) {
             $link = get_permalink($post_id);
             $output .= "<h4>". 'Post Revisions'."</h4>";
@@ -204,11 +205,11 @@ function wiki_metabox_module() {
             }
     	} else {
     	  	$checked_status = "";
-            $wiki_toc_status = "disabled";
+        //    $wiki_toc_status = "disabled";
 		}
 	} else {
     	$checked_status = "";
-        $wiki_toc_status = "disabled";
+       // $wiki_toc_status = "disabled";
 	}
 ?>
 		<div id="postvisibility" class="postbox closed">
@@ -222,7 +223,7 @@ function wiki_metabox_module() {
 				<input id='wiki_page' type='checkbox' $checked_status value='1' name='wiki_page' onchange = 'check_toc();' />
 				This page/post is a wiki friendly page and may be edited by authors and contributors.
 				</label><br />
-                <lable class = 'selectit' for = 'wiki_toc'>
+                <label class = 'selectit' for = 'wiki_toc'>
 				<input id='wiki_toc' type='checkbox' $wiki_toc_status value='1' name='wiki_toc' />
                 Enable Table of Contents
                 </label>";
@@ -249,17 +250,12 @@ function wiki_metabox_module_submit($post_ID) {
     }
 
     $wpsc_check_members_data = $wpdb->get_var("SELECT `meta_id` FROM `".$wpdb->postmeta."` WHERE `post_id` IN('".$post_ID."') AND `meta_key` IN ('wiki_page') LIMIT 1");
-    if(is_numeric($wpsc_check_members_data) && ($wpsc_check_members_data > 0)) {
-      update_post_meta($post_ID, 'wiki_page', $wpsc_members_value);
-		} else {
-      add_post_meta($post_ID, 'wiki_page', $wpsc_members_value);		}
-    
+  
+      update_post_meta($post_ID, 'wiki_page',  (int)(bool)$wpsc_members_value);
+	    
     $wpsc_check_toc_data = $wpdb->get_var("SELECT `meta_id` FROM `".$wpdb->postmeta."` WHERE `post_id` IN('".$post_ID."') AND `meta_key` IN ('wiki_page_toc') LIMIT 1");
-    if(is_numeric($wpsc_check_toc_data) && ($wpsc_check_toc_data > 0)) {
-      update_post_meta($post_ID, 'wiki_page_toc', $wiki_toc_value);
-		} else {
-      add_post_meta($post_ID, 'wiki_page_toc', $wiki_toc_value);		}
-
+         update_post_meta($post_ID, 'wiki_page_toc',  (int)(bool)$wiki_toc_value);
+	
         // need to change the custom fields value too, else it tries to reset what we just did.
         if(is_array($_POST['meta'])) {
             foreach($_POST['meta'] as $meta_key=>$meta_data) {
@@ -314,6 +310,7 @@ function table_of_contents($content) {
 	*/
 	$last_h2_pos = explode('</h2>', $content);
 	$last_h2_pos = array_pop($last_h2_pos);
+	
 	$last_h2_pos[1] = $last_h2_pos;
 	$h3s_contents[1][] = $last_h2_pos;
 	if (!is_array($h3s_contents[1])) {
@@ -321,7 +318,7 @@ function table_of_contents($content) {
 	}
 	array_push($h3s_contents[1], $last_h2_pos);
 	foreach ($h3s_contents[1] as $key => $h3s_content) {
-		preg_match_all("|<h3>(.*)</h3>|U", $h3s_content, $h3s[$key], PREG_PATTERN_ORDER);
+		preg_match_all("|<h3>(.*)</h3>|U", (string)$h3s_content, $h3s[$key], PREG_PATTERN_ORDER);
 	}
 	$table = "<ol class='content_list'>";
 	foreach($h2s as $key => $h2) {
@@ -434,10 +431,12 @@ function wiki_dashboard_widget_function() {
     global $wpdb;
 
 	// Display whatever it is you want to show
-    $posts = $wpdb->get_results($wpdb->prepare("select * from $wpdb->posts where ID in (
+	$sql = ("select * from $wpdb->posts where ID in (
                     select post_id from $wpdb->postmeta where
                     meta_key = 'wiki_page' and meta_value = 1)
-                    and post_type in ('post','page') order by post_modified desc limit 5"));
+                    and post_type in ('post','page') order by post_modified desc limit 5");
+    $posts = $wpdb->get_results($wpdb->prepare($sql));
+    
 ?>
     <div class="rss-widget">
     <ul>
@@ -639,6 +638,77 @@ function wiki_404() {
     $not_found = str_replace("/", "", $_SERVER['REQUEST_URI']);
     echo "<p>" . __("Sorry, the page with title ") . $not_found . __(" is not created yet. Click") . '<a href="' . get_bloginfo('wpurl') . '/wp-admin/post-new.php">' . __("here") . '</a>' . __(" to create a new page with that title.") . "</p";
 }
+
+
+/**
+ * If page edit capabilities are checked for a wiki page, grant them if current user has edit_wiki cap.
+ * @global <type> $wp_query
+ * @param <array> $wp_blogcaps : current user's blog-wide capabilities
+ * @param <array> $reqd_caps : primitive capabilities being tested / requested
+ * @param <array> $args = array:
+ * 				 $args[0] = original capability requirement passed to current_user_can (possibly a meta cap)
+ * 				 $args[1] = user being tested
+ * 				 $args[2] = object id (could be a postID, linkID, catID or something else)
+ * @return <array> capabilities as array key
+ */
+function wiki_page_cap($wp_blogcaps, $reqd_caps, $args) {
+	static $busy;
+	if ( ! empty($busy) )	// don't process recursively
+		return $wp_blogcaps;
+	
+	$busy = true;
+	
+	// Note: add edit_private_pages if you want the edit_wiki cap to satisfy that check also.
+	if ( ! array_diff( $reqd_caps, array( 'edit_pages', 'edit_others_pages', 'edit_published_pages' ) ) ) {
+
+		// determine page ID
+		if ( ! empty($args[2]) )
+			$page_id = $args[2];
+		elseif ( ! empty($_GET['post']) )
+			$page_id = $_GET['post'];
+		elseif ( ! empty($_POST['ID']) )
+			$page_id = $_POST['ID'];
+		elseif ( ! empty($_POST['post_ID']) )
+			$page_id = $_POST['post_ID'];
+		elseif ( ! is_admin() ) {
+			global $wp_query;
+			if ( ! empty($wp_query->post->ID) ) {
+				$page_id = $wp_query->post->ID;
+			}
+		}
+		
+		if ( ! empty($page_id) ) {
+			global $current_user, $scoper;
+
+			if ( ! empty($scoper) && function_exists('is_administrator_rs') && ! is_administrator_rs() && $scoper->cap_defs->is_member('edit_wiki') ) {
+				// call Role Scoper has_cap filter directly because recursive calling of has_cap filter confuses WP
+				$user_caps = $scoper->cap_interceptor->flt_user_has_cap( $current_user->allcaps, array('edit_wiki'), array('edit_wiki', $current_user->ID, $page_id ) );
+			} else
+				$user_caps = $current_user->allcaps;
+
+			if ( ! empty( $user_caps['edit_wiki'] ) ) {
+				// Static-buffer the metadata to avoid performance toll from multiple cap checks.
+				static $wpsc_members_data;
+
+				if ( ! isset($wpsc_members_data) )
+					$wpsc_members_data = array();
+				
+				if ( ! isset($wpsc_members_data[$page_id]) )
+					$wpsc_members_data[$page_id] = get_post_meta($page_id,'wiki_page');
+
+				// If the page in question is a wiki page, give current user credit for all page edit caps.
+				if ( is_array($wpsc_members_data[$page_id]) && ($wpsc_members_data[$page_id][0] == 1) ) {
+					$wp_blogcaps = array_merge( $wp_blogcaps, array_fill_keys($reqd_caps, true) );
+				}
+			}
+		}
+	}
+
+	$busy = false;
+	return $wp_blogcaps;
+}
+
+add_filter('user_has_cap', 'wiki_page_cap', 100, 3);	// this filter must be applied after Role Scoper's because we're changing the cap requirement
 
 add_action('edit_form_advanced','wiki_metabox_module');
 add_action('edit_page_form', 'wiki_metabox_module');
