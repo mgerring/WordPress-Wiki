@@ -75,7 +75,7 @@ if ( ! get_role('wiki_editor')){
 
 $role = get_role('wiki_editor');
 $role->add_cap('edit_wiki');
-
+$role->add_cap('edit_pages');
 function wiki_post_revisions($content='') {
 	global $post, $current_user, $role;
 	if ( !$post = get_post( $post->ID ) )
