@@ -8,6 +8,7 @@ Author: Instinct Entertainment
 Author URI: http://www.instinct.co.nz
 /* Major version for "major" releases */
 
+
 /**
 * Guess the wp-content and plugin urls/paths
 */
@@ -20,6 +21,29 @@ if (!defined('PLUGIN_URL'))
     define('PLUGIN_URL', WP_CONTENT_URL . '/plugins/');
 if (!defined('PLUGIN_PATH'))
     define('PLUGIN_PATH', WP_CONTENT_DIR . '/plugins/');
+if(get_option('numberOfRevisions') == NULL){
+	add_option('numberOfRevisions', 5, '', 'yes' );
+}
+if(get_option('wiki_email_admins') == NULL){
+	add_option('wiki_email_admins', 0, '', 'yes');
+}
+///controller function for admin settings
+if(isset($_POST['submit'])){
+		if(isset($_POST['numberOfRevisions'])){
+		update_option('numberOfRevisions', (int)$_POST['numberOfRevisions'], '', 'yes');
+	}
+	//exit(print_r($_POST));
+		if($_POST['emailnotification'] == 'on'){
+			update_option('wiki_email_admins', 1, '' , 'yes');
+		}elseif(!isset($_POST['emailnotification'])){
+			update_option('wiki_email_admins', 0, '' , 'yes');
+		}
+	
+	//echo print_r($_POST, true).get_option('wiki_email_admins');
+}
+
+
+	//exit(get_option('wiki_email_admins'));
 
 /**
 *  The following roles and capabilities code has been removed because it does not work. If you can help with this, please do.
@@ -38,7 +62,6 @@ if ( ! get_role('wiki_editor')){
 //	,'delete_posts'=>true
 //	,'delete_published_posts'=>true
 //	,'publish_posts'=>true
-//
 //	,'publish_pages'=>true
 //	,'delete_pages'=>true
 //	,'edit_pages'=>true
@@ -91,7 +114,9 @@ function wiki_post_revisions($content='') {
 	$can_edit_post = current_user_can( 'edit_post', $post->ID );
 	//Track the first iteration as this is the current version auther who is different from the original
 	$k=0;
+	$i = 0;
 	foreach ( $revisions as $revision ) {
+		if($i == get_option('numberOfRevisions')) break;
 		$is_selected = '';
 		if ( !current_user_can( 'read_post', $revision->ID ) )
 			continue;
@@ -103,15 +128,19 @@ function wiki_post_revisions($content='') {
 		$date = wiki_post_revision_title( $revision );
 		$name = get_author_name( $revision->post_author );
 		$title = sprintf( $titlef, $date, $name );
+	
+		
 		$rows .= "\t<li $is_selected >$title</li>\n";
+		$i++;
+		}
 		if($k==0)
 			// Current author
 			$post_author=$name;
 		$k++;
-	}
-	$wpsc_members_data = get_post_meta($post->ID,'wiki_page');
+		
 	
-	if (current_user_can('edit_wiki') && (is_array($wpsc_members_data) && ($wpsc_members_data[0] == 1)) && current_user_can('edit_pages')) {
+	$wpwiki_members_data = get_post_meta($post->ID,'wiki_page');
+	if (current_user_can('edit_wiki') && (is_array($wpwiki_members_data) && ($wpwiki_members_data[0] == 1)) && current_user_can('edit_pages')) {
             $link = get_permalink($post_id);
             $output .= "<h4>". 'Post Revisions'."</h4>";
             $output .= "<ul class='post-revisions'>\n";
@@ -119,6 +148,12 @@ function wiki_post_revisions($content='') {
             $output .= $rows;
             $output .= "</ul>";
         }
+    if((is_user_logged_in() == false)&&(is_array($wpwiki_members_data) && ($wpwiki_members_data[0] == 1))){
+     	$siteurl = get_option('siteurl');
+     	$currentpage = $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];
+     	$output .= "This page is wiki editable click <a href='".$siteurl."/wp-login.php?redirect_to=http://".$currentpage."'> here</a> to edit this page.";
+     
+     }
 	return $content.$output;
 }
 
@@ -193,8 +228,8 @@ function wiki_metabox_module() {
   	
   	if(is_numeric($_GET['post'])) {
     	$post_ID = (int)$_GET['post'];
-    	$wpsc_members_data = get_post_meta($post_ID,'wiki_page');
-    	if(is_array($wpsc_members_data) && ($wpsc_members_data[0] == 1)) {
+    	$wpwiki_members_data = get_post_meta($post_ID,'wiki_page');
+    	if(is_array($wpwiki_members_data) && ($wpwiki_members_data[0] == 1)) {
     	 	$checked_status = "checked='checked'";
 
             $wiki_toc_data = get_post_meta($post_ID,'wiki_page_toc');
@@ -205,28 +240,34 @@ function wiki_metabox_module() {
             }
     	} else {
     	  	$checked_status = "";
-        //    $wiki_toc_status = "disabled";
+            $wiki_toc_status = "disabled";
 		}
 	} else {
     	$checked_status = "";
-       // $wiki_toc_status = "disabled";
+        $wiki_toc_status = "disabled";
 	}
 ?>
 		<div id="postvisibility" class="postbox closed">
-				<h3> <?php _e('Wordpress Wiki', 'wiki_page')?> </h3>
+				<h3> <?php _e('Wordpress Wiki')?> </h3>
 		<div class="inside">
 		<div id="postvisibility">
 <?php
-	if (IS_WP25)
+	if (IS_WP25) {
 		echo "<label class='selectit' for='wiki_page'>
 				<input id='wiki_page_check' type='hidden' value='1' name='wiki_page_check' />
-				<input id='wiki_page' type='checkbox' $checked_status value='1' name='wiki_page' onchange = 'check_toc();' />
-				This page/post is a wiki friendly page and may be edited by authors and contributors.
+				<input id='wiki_page' type='checkbox' $checked_status value='1' name='wiki_page' onchange = 'check_toc();' />";
+				
+                _e("This page/post is a wiki friendly page and may be edited by authors and contributors.");
+
+                echo "
 				</label><br />
-                <label class = 'selectit' for = 'wiki_toc'>
-				<input id='wiki_toc' type='checkbox' $wiki_toc_status value='1' name='wiki_toc' />
-                Enable Table of Contents
-                </label>";
+                <lable class = 'selectit' for = 'wiki_toc'>
+				<input id='wiki_toc' type='checkbox' $wiki_toc_status value='1' name='wiki_toc' />";
+
+                _e("Enable Table of Contents");
+                
+                echo "</label>";
+    }
 ?>
 		</div></div></div>
 <?php
@@ -238,9 +279,9 @@ function wiki_metabox_module_submit($post_ID) {
   global $wpdb;
   if(is_numeric($post_ID) && ($_POST['wiki_page_check'] == 1)) {
     if(isset($_POST['wiki_page']) && ($_POST['wiki_page'] == 1)) {
-      $wpsc_members_value = 1;
+      $wpwiki_members_value = 1;
 		} else {
-      $wpsc_members_value = 0;
+      $wpwiki_members_value = 0;
 		}
     
     if(isset($_POST['wiki_toc']) && ($_POST['wiki_toc'] == 1)) {
@@ -249,18 +290,19 @@ function wiki_metabox_module_submit($post_ID) {
         $wiki_toc_value = 0;
     }
 
-    $wpsc_check_members_data = $wpdb->get_var("SELECT `meta_id` FROM `".$wpdb->postmeta."` WHERE `post_id` IN('".$post_ID."') AND `meta_key` IN ('wiki_page') LIMIT 1");
-  
-      update_post_meta($post_ID, 'wiki_page',  (int)(bool)$wpsc_members_value);
-	    
-    $wpsc_check_toc_data = $wpdb->get_var("SELECT `meta_id` FROM `".$wpdb->postmeta."` WHERE `post_id` IN('".$post_ID."') AND `meta_key` IN ('wiki_page_toc') LIMIT 1");
-         update_post_meta($post_ID, 'wiki_page_toc',  (int)(bool)$wiki_toc_value);
-	
+    $wpwiki_check_members_data = $wpdb->get_var("SELECT `meta_id` FROM `".$wpdb->postmeta."` WHERE `post_id` IN('".$post_ID."') AND `meta_key` IN ('wiki_page') LIMIT 1");
+	//changed by jeffry 23-02-09  fixes the meta content bug
+	update_post_meta($post_ID, 'wiki_page',  (int)(bool)$wpwiki_members_value);
+    
+    $wpwiki_check_toc_data = $wpdb->get_var("SELECT `meta_id` FROM `".$wpdb->postmeta."` WHERE `post_id` IN('".$post_ID."') AND `meta_key` IN ('wiki_page_toc') LIMIT 1");
+     //changed by jeffry 23-02-09 fixes the meta content bug 
+      update_post_meta($post_ID, 'wiki_page_toc',  (int)(bool)$wiki_toc_value);
+
         // need to change the custom fields value too, else it tries to reset what we just did.
         if(is_array($_POST['meta'])) {
             foreach($_POST['meta'] as $meta_key=>$meta_data) {
                 if($meta_data['key'] == 'wiki_page') {
-                  $_POST['meta'][$meta_key]['value'] = $wpsc_members_value;
+                  $_POST['meta'][$meta_key]['value'] = $wpwiki_members_value;
                 }
                 if($meta_data['key'] == 'wiki_page_toc') {
                   $_POST['meta'][$meta_key]['value'] = $wiki_toc_value;
@@ -287,8 +329,8 @@ function table_of_contents($content) {
 	* 	This creates the Table of Contents
 	*/
 	global $wpdb,$post;
-	$wpsc_members_data = get_post_meta($post->ID,'wiki_page');
-	if ($wpsc_members_data[0] != '1') {
+	$wpwiki_members_data = get_post_meta($post->ID,'wiki_page');
+	if ($wpwiki_members_data[0] != '1') {
 		return $content;
 	}
 
@@ -310,7 +352,6 @@ function table_of_contents($content) {
 	*/
 	$last_h2_pos = explode('</h2>', $content);
 	$last_h2_pos = array_pop($last_h2_pos);
-	
 	$last_h2_pos[1] = $last_h2_pos;
 	$h3s_contents[1][] = $last_h2_pos;
 	if (!is_array($h3s_contents[1])) {
@@ -318,7 +359,7 @@ function table_of_contents($content) {
 	}
 	array_push($h3s_contents[1], $last_h2_pos);
 	foreach ($h3s_contents[1] as $key => $h3s_content) {
-		preg_match_all("|<h3>(.*)</h3>|U", (string)$h3s_content, $h3s[$key], PREG_PATTERN_ORDER);
+		preg_match_all("|<h3>(.*)</h3>|U", $h3s_content, $h3s[$key], PREG_PATTERN_ORDER);
 	}
 	$table = "<ol class='content_list'>";
 	foreach($h2s as $key => $h2) {
@@ -357,6 +398,11 @@ function wiki_enqueue_scripts() {
  * @global <type> $wp_rewrite
  */
 function wiki_add_feed(  ) {
+    if (function_exists('load_plugin_textdomain')) {
+        $plugin_dir = basename(dirname(__FILE__));
+        load_plugin_textdomain('wordpress_wiki', '', $plugin_dir);
+    }
+
     global $wp_rewrite;
     add_feed('wiki', 'wiki_create_feed');
     add_action('generate_rewrite_rules', 'wiki_rewrite_rules');
@@ -431,12 +477,10 @@ function wiki_dashboard_widget_function() {
     global $wpdb;
 
 	// Display whatever it is you want to show
-	$sql = ("select * from $wpdb->posts where ID in (
+    $posts = $wpdb->get_results($wpdb->prepare("select * from $wpdb->posts where ID in (
                     select post_id from $wpdb->postmeta where
                     meta_key = 'wiki_page' and meta_value = 1)
-                    and post_type in ('post','page') order by post_modified desc limit 5");
-    $posts = $wpdb->get_results($wpdb->prepare($sql));
-    
+                    and post_type in ('post','page') order by post_modified desc limit 5"));
 ?>
     <div class="rss-widget">
     <ul>
@@ -630,6 +674,51 @@ function get_permalink_by_title($page_title) {
 
       return NULL;
 }
+/**
+ * wiki_page_edit_notification 
+ * @global <type> $wpdb
+ * @param <type> $pageID
+ * @return NULL
+ */
+function wiki_page_edit_notification($pageID) {
+    global $wpdb;
+     
+    if(get_option('wiki_email_admins') == 1){
+  
+		$emails = getAllAdmins();
+		$sql = "SELECT post_title, guid FROM ".$wpdb->prefix."posts WHERE ID=".$pageID;
+		$subject = "Wiki Change";
+		$results = $wpdb->get_results($sql);
+	
+		$pageTitle = $results[0]->post_title;
+		$pagelink = $results[0]->guid;
+		$message = "A Wiki Page has been modified on '".get_option('home')."' \n\r The page title is ".$pageTitle.". \n\r To visit this page <a href='".$pagelink."'> click here</a>.";
+		//exit(print_r($emails, true));
+		foreach($emails as $email){
+			wp_mail($email, $subject, $message);
+	    } 
+    }
+}
+/**
+ * getAllAdmins 
+ * @global <type> $wpdb
+ * @param <type> NULL
+ * @return email addresses for all administrators
+ */
+function getAllAdmins(){
+	global $wpdb;
+	$sql = "SELECT ID from $wpdb->users";
+	$IDS = $wpdb->get_col($sql);
+
+	foreach($IDS as $id){
+		$user_info = get_userdata($id);
+		if($user_info->user_level == 10){
+			$emails[] = $user_info->user_email;
+		
+		}
+	}
+	return $emails;
+}
 
 /**
  * Template tag which can be added in the 404 page
@@ -709,7 +798,6 @@ function wiki_page_cap($wp_blogcaps, $reqd_caps, $args) {
 }
 
 add_filter('user_has_cap', 'wiki_page_cap', 100, 3);	// this filter must be applied after Role Scoper's because we're changing the cap requirement
-
 add_action('edit_form_advanced','wiki_metabox_module');
 add_action('edit_page_form', 'wiki_metabox_module');
 
@@ -735,4 +823,42 @@ add_action('wp_dashboard_setup', 'wiki_dashboard_widget' );
 
 add_action('plugins_loaded', 'wiki_widget_myc_init');
 add_filter("the_content", "wiki_build_links", 999);
+add_action('admin_menu', 'wiki_admin_menu');
+//hook to check whether a page has been edited
+add_action('publish_page', 'wiki_page_edit_notification');
+function wiki_admin_menu(){
+	add_submenu_page('options-general.php', 'Wiki settings','Wiki settings', 10 , __FILE__, 'wiki_plugin_options');
+}
+
+function wiki_plugin_options(){
+	if(get_option('wiki_email_admins') == 0){
+		$checked = '';
+	}else if(get_option('wiki_email_admins') == 1){
+		$checked = 'checked=checked';
+	}
+	?>
+	<div class="wrap">
+	<h2>Wiki Settings</h2>
+	<br />
+	<?php 
+		if(isset($_POST['submit'])){
+		?>
+			<p>Update Complete.</p>
+		<?php
+		}
+	?>
+	<form action='' method='post'>
+	<label for='numberOfRevisions'>Number of Revisions per page: </label>
+	<p><input type='text' name='numberOfRevisions' size='10' value="<?php echo get_option('numberOfRevisions');?>" /></p>
+	<p><input type='checkbox' name='emailnotification' <?php echo $checked; ?> /> Notify Administrators via Email when wiki pages have been editted.</p>
+	
+	<input class='button-primary' type='submit' name='submit' value='Submit' />
+	</form>
+	
+	
+	</div>
+	<?php
+
+}
+
 ?>
