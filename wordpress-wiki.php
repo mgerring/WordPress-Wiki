@@ -56,9 +56,9 @@ if ( ! isset($wp_roles) )
 
 if ( ! get_role('wiki_editor')){
 	$role_capabilities = array('read'=>true
-//	,'edit_posts'=>true
-//	,'edit_others_posts'=>true
-//	,'edit_published_posts'=>true
+	,'edit_posts'=>true
+	,'edit_others_posts'=>true
+	,'edit_published_posts'=>true
 //	,'delete_posts'=>true
 //	,'delete_published_posts'=>true
 //	,'publish_posts'=>true
@@ -76,6 +76,9 @@ if ( ! get_role('wiki_editor')){
 $role = get_role('wiki_editor');
 $role->add_cap('edit_wiki');
 $role->add_cap('edit_pages');
+$role->add_cap('edit_post');
+$role->add_cap('edit_others_posts');
+$role->add_cap('edit_published_posts');
 function wiki_post_revisions($content='') {
 	global $post, $current_user, $role;
 	if ( !$post = get_post( $post->ID ) )
@@ -141,10 +144,10 @@ function wiki_post_revisions($content='') {
 	
 	$wpwiki_members_data = get_post_meta($post->ID,'wiki_page');
 	if (current_user_can('edit_wiki') && (is_array($wpwiki_members_data) && ($wpwiki_members_data[0] == 1)) && current_user_can('edit_pages')) {
-            $link = get_permalink($post_id);
+            $link = get_permalink($post->ID);
             $output .= "<h4>". 'Post Revisions'."</h4>";
             $output .= "<ul class='post-revisions'>\n";
-	    $output .= "\t<li $is_selected ><a href='".$link."'>Current revision</a> by ".$post_author." - <a href='".get_edit_post_link( $post->ID )."'>Edit this page</a></li>\n";
+	    $output .= "\t<li $is_selected ><a href='".$link."'>Current revision</a> by ".$post_author." <a href='".edit_post_link()."' >Or this</a>- <a href='".get_edit_post_link( $post->ID )."'>Edit this page</a></li>\n";
             $output .= $rows;
             $output .= "</ul>";
         }
