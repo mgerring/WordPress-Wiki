@@ -3,7 +3,7 @@
 Plugin Name:WordPress Wiki
 Plugin URI: http://wordpress.org/extend/plugins/wordpress-wiki/
 Description: Add Wiki functionality to your wordpress site.
-Version: 0.7
+Version: 0.8
 Author: Instinct Entertainment
 Author URI: http://www.instinct.co.nz
 /* Major version for "major" releases */
@@ -27,6 +27,15 @@ if(get_option('numberOfRevisions') == NULL){
 if(get_option('wiki_email_admins') == NULL){
 	add_option('wiki_email_admins', 0, '', 'yes');
 }
+if(get_option('wiki_show_toc_onfrontpage') == NULL){
+	add_option('wiki_show_toc_onfrontpage', 0, '', 'yes');
+}
+if(get_option('wiki_cron_last_email_date') == NULL){
+	add_option('wiki_cron_last_email_date', date('Y-m-d G:i:s') , '', 'yes');
+}
+define('WPWIKI_FILE_PATH', dirname(__FILE__));
+define('WPWIKI_DIR_NAME', basename(WPWIKI_FILE_PATH));
+
 ///controller function for admin settings
 if(isset($_POST['submit'])){
 		if(isset($_POST['numberOfRevisions'])){
@@ -38,7 +47,18 @@ if(isset($_POST['submit'])){
 		}elseif(!isset($_POST['emailnotification'])){
 			update_option('wiki_email_admins', 0, '' , 'yes');
 		}
-	
+		if($_POST['showonfrontpage'] == 'on'){
+			update_option('wiki_show_toc_onfrontpage', 1, '' , 'yes');
+		}elseif(!isset($_POST['showonfrontpage'])){
+			update_option('wiki_show_toc_onfrontpage', 0, '' , 'yes');
+		}
+		if($_POST['cronnotify'] == 'on'){
+			update_option('wiki_cron_email', 1, '' , 'yes');
+		}elseif(!isset($_POST['cronnotify'])){
+			update_option('wiki_cron_email', 0, '' , 'yes');
+		}
+
+
 	//echo print_r($_POST, true).get_option('wiki_email_admins');
 }
 
@@ -142,12 +162,12 @@ function wiki_post_revisions($content='') {
 		$k++;
 		
 	
-	$wpwiki_members_data = get_post_meta($post->ID,'wiki_page');
+	$wpwiki_members_data = get_post_meta($post->ID,'_wiki_page');
 	if (current_user_can('edit_wiki') && (is_array($wpwiki_members_data) && ($wpwiki_members_data[0] == 1)) && current_user_can('edit_pages')) {
             $link = get_permalink($post->ID);
             $output .= "<h4>". 'Post Revisions'."</h4>";
             $output .= "<ul class='post-revisions'>\n";
-	    $output .= "\t<li $is_selected ><a href='".$link."'>Current revision</a> by ".$post_author." <a href='".edit_post_link()."' >Or this</a>- <a href='".get_edit_post_link( $post->ID )."'>Edit this page</a></li>\n";
+	    $output .= "\t<li $is_selected ><a href='".$link."'>Current revision</a> by ".$post_author." - <a href='".get_edit_post_link( $post->ID )."'>Edit this page</a></li>\n";
             $output .= $rows;
             $output .= "</ul>";
         }
@@ -223,7 +243,7 @@ function wiki_view_sql_query($query) {
 /**
 *  wiki page metabox section starts
 */
-function wiki_metabox_module() {
+function wordpressWiki_metabox() {
 		/**
 		*  this function creates the HTML for the wiki page metabox module
 		*/
@@ -231,11 +251,11 @@ function wiki_metabox_module() {
   	
   	if(is_numeric($_GET['post'])) {
     	$post_ID = (int)$_GET['post'];
-    	$wpwiki_members_data = get_post_meta($post_ID,'wiki_page');
+    	$wpwiki_members_data = get_post_meta($post_ID,'_wiki_page');
     	if(is_array($wpwiki_members_data) && ($wpwiki_members_data[0] == 1)) {
     	 	$checked_status = "checked='checked'";
 
-            $wiki_toc_data = get_post_meta($post_ID,'wiki_page_toc');
+            $wiki_toc_data = get_post_meta($post_ID,'_wiki_page_toc');
             if(is_array($wiki_toc_data) && ($wiki_toc_data[0] == 1)) {
         	 	$wiki_toc_status = "checked='checked'";
             } else {
@@ -249,13 +269,7 @@ function wiki_metabox_module() {
     	$checked_status = "";
         $wiki_toc_status = "disabled";
 	}
-?>
-		<div id="postvisibility" class="postbox closed">
-				<h3> <?php _e('Wordpress Wiki')?> </h3>
-		<div class="inside">
-		<div id="postvisibility">
-<?php
-	if (IS_WP25) {
+
 		echo "<label class='selectit' for='wiki_page'>
 				<input id='wiki_page_check' type='hidden' value='1' name='wiki_page_check' />
 				<input id='wiki_page' type='checkbox' $checked_status value='1' name='wiki_page' onchange = 'check_toc();' />";
@@ -270,11 +284,22 @@ function wiki_metabox_module() {
                 _e("Enable Table of Contents");
                 
                 echo "</label>";
-    }
-?>
-		</div></div></div>
-<?php
+
 }
+/**
+*  wiki page metabox section starts
+*/
+function wiki_metabox_module() {
+		/**
+		*  this function creates the HTML for the wiki page metabox module
+		*/
+
+  	add_meta_box( 'wordpressWiki', __( 'Wordpress Wiki', 'wordpressWiki' ), 
+	            'wordpressWiki_metabox', 'page', 'advanced' );
+	             	add_meta_box( 'wordpressWiki', __( 'Wordpress Wiki', 'wordpressWiki' ), 
+	            'wordpressWiki_metabox', 'post', 'advanced' );
+  	}
+
 function wiki_metabox_module_submit($post_ID) {
 		/**
 		*  this function saves the HTML for the wiki page metabox module
@@ -295,11 +320,11 @@ function wiki_metabox_module_submit($post_ID) {
 
     $wpwiki_check_members_data = $wpdb->get_var("SELECT `meta_id` FROM `".$wpdb->postmeta."` WHERE `post_id` IN('".$post_ID."') AND `meta_key` IN ('wiki_page') LIMIT 1");
 	//changed by jeffry 23-02-09  fixes the meta content bug
-	update_post_meta($post_ID, 'wiki_page',  (int)(bool)$wpwiki_members_value);
+	update_post_meta($post_ID, '_wiki_page',  (int)(bool)$wpwiki_members_value);
     
     $wpwiki_check_toc_data = $wpdb->get_var("SELECT `meta_id` FROM `".$wpdb->postmeta."` WHERE `post_id` IN('".$post_ID."') AND `meta_key` IN ('wiki_page_toc') LIMIT 1");
      //changed by jeffry 23-02-09 fixes the meta content bug 
-      update_post_meta($post_ID, 'wiki_page_toc',  (int)(bool)$wiki_toc_value);
+      update_post_meta($post_ID, '_wiki_page_toc',  (int)(bool)$wiki_toc_value);
 
         // need to change the custom fields value too, else it tries to reset what we just did.
         if(is_array($_POST['meta'])) {
@@ -332,14 +357,18 @@ function table_of_contents($content) {
 	* 	This creates the Table of Contents
 	*/
 	global $wpdb,$post;
-	$wpwiki_members_data = get_post_meta($post->ID,'wiki_page');
+	$wpwiki_members_data = get_post_meta($post->ID,'_wiki_page');
 	if ($wpwiki_members_data[0] != '1') {
 		return $content;
 	}
 
     // Check whether table of contents is set or not
-	$wiki_toc_data = get_post_meta($post->ID,'wiki_page_toc');
-	if ($wiki_toc_data[0] != '1') {
+	$wiki_toc_data = get_post_meta($post->ID,'_wiki_page_toc');
+	// second condition checks: are we on the front page and
+	// is front page displaying set. - tony@irational.org
+	if ($wiki_toc_data[0] != '1' 
+	    || (is_front_page() && !get_option('wiki_show_toc_onfrontpage'))) {
+
 		return $content;
 	}
 
@@ -375,7 +404,7 @@ function table_of_contents($content) {
 	}
 	$table .= "</ol>";
 	$content = str_replace("::newline::", "\n", $content);
-	return "<div class='contents'><h3>Contents</h3>[<a class='show' onclick='toggle_hide_show(this)'>hide</a>]$table</div>".$content;
+	return "<div class='contents'><h3>Contents</h3><p> &#91; <a class='show' onclick='toggle_hide_show(this)'>hide</a> &#93; </p>$table</div>".$content;
 }
 
 function wp_wiki_head() {
@@ -383,7 +412,7 @@ function wp_wiki_head() {
 	* 	Include CSS
 	*/
 
-    echo "<link href='". PLUGIN_URL . "wordpress-wiki/style.css' rel='stylesheet' type='text/css' />";
+    echo "<link href='". PLUGIN_URL ."/".WPWIKI_DIR_NAME."/style.css' rel='stylesheet' type='text/css' />";
 }
 
 /**
@@ -391,7 +420,7 @@ function wp_wiki_head() {
  */
 function wiki_enqueue_scripts() {
    wp_enqueue_script("jquery");
-   wp_enqueue_script('wordpress-wiki', PLUGIN_URL . "wordpress-wiki/wordpress-wiki.js");
+   wp_enqueue_script('wordpress-wiki', PLUGIN_URL ."/".WPWIKI_DIR_NAME."/wordpress-wiki.js");
 }
 
 //Feed Functions
@@ -472,6 +501,15 @@ function wiki_create_feed() {
 <?php
 		die();
 }
+function wiki_get_post_revision($id){
+	global $wpdb;
+	$sql = "SELECT `$wpdb->users`.`user_login` FROM $wpdb->users LEFT JOIN $wpdb->posts ON $wpdb->posts.`post_author` = $wpdb->users.`ID` WHERE $wpdb->posts.`post_parent`= $id AND $wpdb->posts.`post_type`='revision' AND `post_name`  LIKE '%revision%' ORDER BY $wpdb->posts.`post_date` DESC";
+	//echo $sql;
+	$revision = $wpdb->get_var($sql);
+	return $revision;
+//	exit('<pre>'.print_r($revision,true).'</pre>');
+	
+}
 
 /**
  * function to output the contents of our Dashboard Widget
@@ -490,8 +528,10 @@ function wiki_dashboard_widget_function() {
 <?php
     if (count($posts) > 0) {
         foreach ($posts as $post) {
+         $name =	wiki_get_post_revision($post->ID);
+
 ?>
-        <li><a href = "<?php echo get_permalink($post->ID)?>"><?php echo $post->post_title ?></a></li>
+        <li><a href = "<?php echo get_permalink($post->ID)?>"><?php echo $post->post_title ?></a> (<?php echo $name; ?>)</li>
 <?php
         }
     } else {
@@ -531,7 +571,7 @@ function wiki_get_user_posts($nos) {
     <ul>
 <?php
     foreach ($posts as $post) {
-        if (get_post_meta($post->ID, "wiki_page", "true") == "1") {
+        if (get_post_meta($post->ID, "_wiki_page", "true") == "1") {
             printf("<li><a href = '%s'>%s</a></li>", get_permalink($post->ID) ,$post->post_title);
             $count++;
             if ($count == $nos) {
@@ -624,7 +664,7 @@ function wiki_widget_myc_init() {
 function wiki_build_links($content) {
     global $post;
 
-    if (get_post_meta($post->ID, "wiki_page", "true") == "1") {
+    if (get_post_meta($post->ID, "_wiki_page", "true") == "1") {
         // If it is a wiki post or page, then parse the content and build links
         $pattern = '/(\[\[([^\]]*)\]\])/i';
         return preg_replace_callback($pattern, "wiki_callback_func", $content);
@@ -786,7 +826,7 @@ function wiki_page_cap($wp_blogcaps, $reqd_caps, $args) {
 					$wpsc_members_data = array();
 				
 				if ( ! isset($wpsc_members_data[$page_id]) )
-					$wpsc_members_data[$page_id] = get_post_meta($page_id,'wiki_page');
+					$wpsc_members_data[$page_id] = get_post_meta($page_id,'_wiki_page');
 
 				// If the page in question is a wiki page, give current user credit for all page edit caps.
 				if ( is_array($wpsc_members_data[$page_id]) && ($wpsc_members_data[$page_id][0] == 1) ) {
@@ -829,6 +869,47 @@ add_filter("the_content", "wiki_build_links", 999);
 add_action('admin_menu', 'wiki_admin_menu');
 //hook to check whether a page has been edited
 add_action('publish_page', 'wiki_page_edit_notification');
+function more_reccurences() {
+    return array(
+        'weekly' => array('interval' => 604800, 'display' => 'Once Weekly'),
+        'fortnightly' => array('interval' => 1209600, 'display' => 'Once Fortnightly'),
+    );
+}
+add_filter('cron_schedules', 'more_reccurences');
+
+if (!wp_next_scheduled('cron_email_hook')) {
+    wp_schedule_event( time(), 'weekly', 'cron_email_hook' );
+}
+
+add_action( 'cron_email_hook', 'cron_email' );
+
+function cron_email() {
+
+    if (get_option('wiki_cron_email') == 1) {
+        $last_email = get_option('wiki_cron_last_email_date');
+        
+		$emails = getAllAdmins();
+		$sql = "SELECT post_title, guid FROM ".$wpdb->prefix."posts WHERE post_modifiyed > ".$last_email;
+        
+		$subject = "Wiki Change";
+		$results = $wpdb->get_results($sql);
+	
+        $message = " The following Wiki Pages has been modified on '".get_option('home')."' \n\r ";
+        if ($results) {
+            foreach ($results as $result) {
+                $pageTitle = $result->post_title;
+                $pagelink = $result->guid;
+                $message .= "Page title is ".$pageTitle.". \n\r To visit this page <a href='".$pagelink."'> click here</a>.\n\r\n\r";
+                //exit(print_r($emails, true));
+                foreach($emails as $email){
+                    wp_mail($email, $subject, $message);
+                }
+            }
+        }
+        update_option('wiki_cron_last_email_date', date('Y-m-d G:i:s'));
+    }
+}
+
 function wiki_admin_menu(){
 	add_submenu_page('options-general.php', 'Wiki settings','Wiki settings', 10 , __FILE__, 'wiki_plugin_options');
 }
@@ -839,6 +920,17 @@ function wiki_plugin_options(){
 	}else if(get_option('wiki_email_admins') == 1){
 		$checked = 'checked=checked';
 	}
+	if(get_option('wiki_show_toc_onfrontpage') == 0){
+		$checked_toc = '';
+	}else if(get_option('wiki_show_toc_onfrontpage') == 1){
+		$checked_toc = 'checked=checked';
+	}
+	if(get_option('wiki_cron_email') == 0){
+		$cron_checked = '';
+	}else if(get_option('wiki_cron_email') == 1){
+		$cron_checked = 'checked=checked';
+	}
+
 	?>
 	<div class="wrap">
 	<h2>Wiki Settings</h2>
@@ -854,7 +946,9 @@ function wiki_plugin_options(){
 	<label for='numberOfRevisions'>Number of Revisions per page: </label>
 	<p><input type='text' name='numberOfRevisions' size='10' value="<?php echo get_option('numberOfRevisions');?>" /></p>
 	<p><input type='checkbox' name='emailnotification' <?php echo $checked; ?> /> Notify Administrators via Email when wiki pages have been editted.</p>
-	
+	<p><input type='checkbox' name='showonfrontpage' <?php echo $checked_toc; ?> /> Show Table of Content on the front page posts.</p>
+	<p><input type='checkbox' name='cronnotify' <?php echo $cron_checked; ?> /> Notify Administrators via Email when wiki pages have been editted. (only once in a week)</p>
+
 	<input class='button-primary' type='submit' name='submit' value='Submit' />
 	</form>
 	
