@@ -1,5 +1,5 @@
 === Wordpress Wiki ===
-Contributors: Dan Milward, Thomas Howard, Allen Han
+Contributors: Dan Milward, Allen Han, Matthew Gerring
 Donate link: http://www.instinct.co.nz/
 Tags: wiki
 Requires at least: 2.8
