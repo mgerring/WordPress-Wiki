@@ -3,7 +3,7 @@
 Plugin Name:WordPress Wiki
 Plugin URI: http://wordpress.org/extend/plugins/wordpress-wiki/
 Description: Add Wiki functionality to your wordpress site.
-Version: 0.9b
+Version: 0.9a2
 Author: Instinct Entertainment/Matthew Gerring
 Author URI: http://www.instinct.co.nz
 /* Major version for "major" releases */
@@ -43,18 +43,7 @@ if (!defined('PLUGIN_URL'))
     define('PLUGIN_URL', WP_CONTENT_URL . '/plugins/');
 if (!defined('PLUGIN_PATH'))
     define('PLUGIN_PATH', WP_CONTENT_DIR . '/plugins/');
-if(get_option('numberOfRevisions') == NULL){
-	add_option('numberOfRevisions', 5, '', 'yes' );
-}
-if(get_option('wiki_email_admins') == NULL){
-	add_option('wiki_email_admins', 0, '', 'yes');
-}
-if(get_option('wiki_show_toc_onfrontpage') == NULL){
-	add_option('wiki_show_toc_onfrontpage', 0, '', 'yes');
-}
-if(get_option('wiki_cron_last_email_date') == NULL){
-	add_option('wiki_cron_last_email_date', date('Y-m-d G:i:s') , '', 'yes');
-}
+
 define('WPWIKI_FILE_PATH', dirname(__FILE__));
 define('WPWIKI_DIR_NAME', basename(WPWIKI_FILE_PATH));
 
@@ -123,42 +112,40 @@ function register_wiki_post_type() {
 		'labels'=>$labels,
 		'description'=>'Wiki-enabled page. Users with permission can edit this page.',
 		'public'=>true,
-		'capability_type'=>'page',
+		'capability_type'=>'wiki_page',
 		'supports' => array('title','editor','author','thumbnail','excerpt','comments','revisions','custom-fields','page-attributes'),
 		'hierarchical' => true
 	));
+	
+	global $wp_roles;
+	
+	$all_roles = $wp_roles->get_names();
+
+	$wiki_caps = array(
+		'edit_wiki'=>true,
+		'edit_wiki_page'=>true,
+		'edit_wiki_pages'=>true,
+		'edit_others_wiki_pages'=>true,
+		'publish_wiki_pages'=>true
+	);
+	
+	foreach ($all_roles as $role => $name) {
+		$role_object = get_role($role);
+		foreach ($wiki_caps as $cap => $grant) {
+			if ($cap == 'publish_wiki_pages' && $role == 'wiki_editor')
+				continue;
+			else
+				$role_object->add_cap($cap);
+		}
+	}
 }
 
-global $wp_roles;
-
-if ( ! isset($wp_roles) )
-	$wp_roles = new WP_Roles();
-
-if ( ! get_role('wiki_editor')){
+if ( ! get_role('wiki_editor') ) {
 	$role_capabilities = array(
 		'read'=>true
-	//	,'edit_posts'=>true
-	//	,'edit_others_posts'=>true
-	//	,'edit_published_posts'=>true
-	//	,'delete_posts'=>true
-	//	,'delete_published_posts'=>true
-	//	,'publish_posts'=>true
-		,'publish_pages'=>true
-	//	,'delete_pages'=>true
-		,'edit_pages'=>true
-		,'edit_others_pages'=>true
-		,'edit_published_pages'=>true
-		,'delete_published_pages'=>true
-		,'edit_wiki'=>true);
-    $wp_roles->add_role('wiki_editor', 'Wiki Editor',$role_capabilities);
+	);
+    add_role('wiki_editor', 'Wiki Editor', $role_capabilities);
 }
-
-$role = get_role('wiki_editor');
-$role->add_cap('edit_wiki');
-$role->add_cap('edit_pages');
-//$role->add_cap('edit_post');
-$role->add_cap('edit_others_posts');
-$role->add_cap('edit_published_posts');
 
 function wiki_post_revisions() {
 	global $post, $current_user, $role;
@@ -569,7 +556,8 @@ function wpw_invoke_editor() {
 	global $post;
 	if ( wiki_back_compat('front_end_check') ) {
 		$wpw_options = get_option('wpw_options');
-		if ( current_user_can('edit_posts') ) 	{
+		if ( current_user_can('edit_wiki') ) {
+			remove_filter('the_content', 'wpautop');
 			add_filter('the_content','wpw_substitute_in_revision_content',11);
 			add_filter('the_content','wpw_wiki_interface',12);
 			add_action('wp_footer','wpw_inline_editor');
@@ -612,7 +600,7 @@ function wpw_wiki_parser($content, $title) {
 	$wiki_parser = new WPW_WikiParser();
 	$wiki_parser->reference_wiki = get_bloginfo('url').'/wiki/';
 	$wiki_parser->suppress_linebreaks = true;	
-	$content = $wiki_parser->parse($post->post_content, $title);
+	$content = $wiki_parser->parse($content, $title);
 	$content = wpautop($content);	
 	return $content;
 }
@@ -623,7 +611,7 @@ function wpw_wiki_interface($content) {
 	get_option('wpw_options');
 	
 	//Create the "edit" interface
-	$textarea = '<textarea style="width:100%;height:200px;" id="area1">'.$post->post_content.'</textarea>';
+	$textarea = '<textarea style="width:100%;height:200px;" id="area1">'.$content.'</textarea>';
 	
 	//Handle revisions
 	(isset($post->revision_warning)) ? $warning = $post->revision_warning : $warning = false;
@@ -809,6 +797,7 @@ add_action('init','wpw_create_new_and_redirect');
 function wpw_create_new_and_redirect() {
 	//echo 'workin?';
 	if (isset($_GET['new_wiki_page']) && $_GET['new_wiki_page'] == 'true' && wp_verify_nonce($_GET['nonce'], 'wpw_new_page_nonce')) {
+		
 	global $wp_version;
 	$new_wiki = array();
 	$new_wiki['post_title'] = $_GET['title'];
@@ -823,10 +812,9 @@ function wpw_create_new_and_redirect() {
 	if($wp_version <= 3.0) {
 		update_post_meta($new_wiki_id, '_wiki_page', 1);
 	}
-	header('Location: '.get_bloginfo('url').'?p='.$new_wiki_id);
-	} else {
-		//echo 'didnt work!!';
-	} 
+	
+	wp_redirect( get_bloginfo('template_url') );
+	}
 }
 
 function wpw_show_me() {
@@ -851,5 +839,9 @@ function curPageURL() {
   $pageURL .= $_SERVER["SERVER_NAME"].$_SERVER["REQUEST_URI"];
  }
  return $pageURL;
+}
+
+function wpw_page_caps() {
+	
 }
 ?>

@@ -15,15 +15,28 @@ function wpw_check_meta($post, $index, $val) {
 function wpw_register_options_page() {
 	
 	$page = add_options_page( 
-				'Wiki Options', 	//Options page title
-				'Wiki Options', 	//"
-				'switch_themes', 			//Permissions
-				'wpw-options', 				//Slug
-				'wpw_options_page' 			//Callback
-			);
+		'Wiki Options', 	//Options page title
+		'Wiki Options', 	//"
+		'switch_themes', 	//Permissions
+		'wpw-options', 		//Slug
+		'wpw_options_page' 	//Callback
+	);
 	//add_action('admin_print_scripts-'.$page,'scc_post_order_scripts'); //In case it needs scripts
 	//add_action('admin_print_styles-'.$page,'scc_post_order_styles'); //In case it needs styles
 	register_setting('wpw_options_group','wpw_options'); //We're only going to register one option and store serialized data in it
+}
+
+function wpw_upgrade_check() {
+	if ( get_option( 'numberOfRevisions' ) != false ) {
+		return true;
+	} else {
+		$wiki = get_role('wiki_editor');
+		if ( $wiki->has_cap('edit_posts') ) {
+			return true;	
+		} else {
+			return false;
+		}
+	}
 }
 
 function wpw_options_page() {
@@ -47,16 +60,20 @@ function wpw_options_page() {
 	
 	<?php 
 		//If we need upgrading...
-		if( get_option('numberOfRevisions') && !isset($wpw_options['wpw_upgrade']) ) {
+		
+		if( wpw_upgrade_check() & $wpw_options['wpw_upgrade'] != 'do_upgrade') {
 			echo '<p>'.__('An older version of WordPress Wiki was detected. Before using WordPress Wiki, you\'ll need to upgrade your existing installation.').'</p>';
 			if ($wp_version >= 3.0) {
 				echo '<p>'.__('Your old Wiki pages will be upgraded to custom post types and placed in the trash.').'</p>';
 			}
+			echo '<p><strong>'.__('WARNING: YOU CANNOT UNDO THIS ACTION. BACK UP YOUR DATA BEFORE UPGRADING!').'</strong></p>';
 			echo '<input type="hidden" name="wpw_options[wpw_upgrade]" value="do_upgrade" />';
 			echo '<input type="submit" value="Upgrade!" />';
 		}
+		
 		//OK, now we're upgrading...
-		elseif ( get_option('numberOfRevisions') && $wpw_options['wpw_upgrade'] == 'do_upgrade')  {
+		
+		elseif ( $wpw_options['wpw_upgrade'] == 'do_upgrade')  {
 			wpw_upgrade();
 		} else {
 		
@@ -121,45 +138,68 @@ function wpw_options_page() {
   	echo '</div>';
 }
 
+function wpw_upgrade_wiki_editor() {
+	global $wp_roles;
+	$wiki = get_role('wiki_editor');
+	if ($wiki->has_cap('edit_posts')) {
+		remove_role('wiki_editor');
+		add_role( 'wiki_editor', 'Wiki Editor', array('read' => true) );
+	}
+	echo "Succesfully upgraded Wiki Editor role";
+}
+
 function wpw_upgrade() {
 	//Alternate form in case we're upgrading.
+	
 	global $wp_version;
-	$wpw_options = get_option('wpw_options');	
-	if ($wp_version >= 3.0) {
+	
+	$wpw_options = get_option('wpw_options');
+	$test = get_posts('post_type=wiki');
+	if ( $wp_version >= 3.0 && empty( $test ) ) {
 		$old_wikis = get_pages('meta_key=_wiki_page&meta_value=1');
 		foreach($old_wikis as $wiki) {
 			$wiki->post_type = 'wiki';
 			$wiki->ID = null;
 			if (wp_insert_post($wiki) != false) {
 				echo "<p>".__('Wiki page')." ".$wiki->post_title." ".__('successfully upgraded to Wiki post type.')."</p><br />";
-				//wp_delete_post($wiki->ID);
+				wp_delete_post($wiki->ID);
 			}
 		}
 	}
+	
+	wpw_upgrade_wiki_editor();
 
-	if( get_option('numberOfRevisions') != false ) {
+	if( !isset($wpw_options['number_of_revisions']) && get_option('numberOfRevisions') != false ) {
 		echo '<input type="hidden" name="wpw_options[number_of_revisions]" value="'.get_option('numberOfRevisions').'" />';
-	} elseif (!isset($wpw_options['number_of_revisions'])) {
+	} elseif (empty($wpw_options['number_of_revisions'])) {
 		echo '<input type="hidden" name="wpw_options[number_of_revisions]" value="5" />';
 	}
+	
+	delete_option('numberOfRevisions');
 
-	if( get_option('wiki_email_admins') != false ) {
+	if( !isset($wpw_options['email_admins']) && get_option('wiki_email_admins') != false ) {
 		echo '<input type="hidden" name="wpw_options[email_admins]" value="'.get_option('wiki_email_admins').'" />';
-	} elseif (!isset($wpw_options['email_admins'])) {
+	} elseif (empty($wpw_options['email_admins'])) {
 		echo '<input type="hidden" name="wpw_options[email_admins]" value="0" />';
 	}
 	
-	if( get_option('wiki_show_toc_onfrontpage') != false ) {
+	delete_option('wiki_email_admins');
+	
+	if( !isset($wpw_options['show_toc_onfrontpage']) && get_option('wiki_show_toc_onfrontpage') != false ) {
 		echo '<input type="hidden" name="wpw_options[show_toc_onfrontpage]" value="'.get_option('wiki_show_toc_onfrontpage').'" />';
-	} elseif (!isset($wpw_options['show_toc_onfrontpage'])) {
+	} elseif (empty($wpw_options['show_toc_onfrontpage'])) {
 		echo '<input type="hidden" name="wpw_options[show_toc_onfrontpage]" value="0" />';
 	}
 	
-	if( get_option('wiki_cron_email') != false ) {
+	delete_option('wiki_show_toc_onfrontpage');
+	
+	if( !isset($wpw_options['cron_email']) && get_option('wiki_cron_email') != false ) {
 		echo '<input type="hidden" name="wpw_options[cron_email]" value="'.get_option('wiki_cron_email').'" />';
-	} elseif (!isset($wpw_options['cron_email'])) {
+	} elseif (empty($wpw_options['cron_email'])) {
 		echo '<input type="hidden" name="wpw_options[cron_email]" value="0" />';
 	}
+	
+	delete_option('wiki_cron_email');
 	
 	echo '<input type="hidden" name="wpw_options[wpw_upgrade]" value="done_gone_and_upgraded" />';
 	
@@ -180,8 +220,12 @@ function wpw_replace_current_with_pending($id) {
 	//var_dump($revision[0]);
 	if(!isset($_POST['wpw_is_admin']))
 		return;
+	
+	if(!isset($_POST['wpw_change_to_wiki']))
+		unset($GLOBALS['wpw_prevent_recursion']);
 		
 	global $wp_version;
+	
 	if($wp_version < 3.0) {
 		if(isset($_POST['wpw_is_wiki']) && $_POST['wpw_is_wiki'] == "true" )
 			update_post_meta($id, '_wiki_page', 1);
@@ -205,6 +249,20 @@ function wpw_replace_current_with_pending($id) {
 			wp_update_post($n_post);
 		}
 	}
+	
+	if ($wp_version >= 3.0 && isset($_POST['wpw_change_to_wiki']) && !isset($GLOBALS['wpw_prevent_recursion'])) {
+		$GLOBALS['wpw_prevent_recursion'] = true;
+		$id_we_are_changing = $_POST['wpw_change_wiki_id'];
+		$update_post = get_post($id_we_are_changing, 'ARRAY_A');
+		unset($update_post['ID']);
+		unset($update_post['post_parent']);
+		$update_post['post_type'] = 'wiki';
+		$update_post['post_status'] = 'publish';
+		$new = wp_insert_post($update_post);
+		wp_delete_post($id_we_are_changing, true);
+		wp_redirect( get_edit_post_link($new, 'go_to_it') );
+	}
+
 	//echo print_r($_POST, true).get_option('wiki_email_admins');
 }
 
@@ -227,11 +285,17 @@ add_action('admin_menu', 'wpw_add_custom_box');
 /* Adds a custom section to the "advanced" Post and Page edit screens */
 function wpw_add_custom_box() {
     //Wordpress 2.6 + -- this is the only one we need
-    add_meta_box( 'wpw_meta_box', __( 'Wiki Options', 'wp-wiki' ), 
-                'wpw_meta_box_inner', 'page', 'side', 'high' );
-	
-	add_meta_box( 'wpw_meta_box', __( 'Wiki Options', 'wp-wiki' ), 
-                'wpw_meta_box_inner', 'wiki', 'side', 'high' );
+    global $wp_version;
+    if ($wp_version < 3.0) {
+	    add_meta_box( 'wpw_meta_box', __( 'Wiki Options', 'wp-wiki' ), 
+	                'wpw_meta_box_inner', 'page', 'side', 'high' );
+	} else {
+		add_meta_box( 'wpw_meta_box', __( 'Wiki Options', 'wp-wiki' ), 
+	                'wpw_meta_box_inner', 'wiki', 'side', 'high' );
+
+		add_meta_box( 'wpw_meta_box', __( 'Wiki Options', 'wp-wiki' ), 
+	                'wpw_meta_box_inner_pages', 'page', 'side', 'high' );
+	}
 }
    
 /* Prints the inner fields for the custom post/page section */
@@ -262,6 +326,18 @@ function wpw_meta_box_inner() {
 		
 		<?php }
 	}
+}
+
+function wpw_meta_box_inner_pages() {
+	echo '<input type="hidden" name="wpw_is_admin" value="1" />';
+	global $wp_version;
+?>
+		<h5><?php _e('Wiki Page'); ?></h5>	
+		<input type="checkbox" name="wpw_change_to_wiki" value="true" />
+		<label for="wpw_change_to_wiki"><?php _e('This is a Wiki page. Logged in users can edit its content.'); ?></label>
+		<input type="hidden" name="wpw_change_wiki_id" value="<?php echo $_GET['post']; ?>" />
+<?php  
+
 }
 
 /* When the post is saved, saves our custom data */
