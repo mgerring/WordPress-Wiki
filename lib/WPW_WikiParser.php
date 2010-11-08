@@ -4,7 +4,9 @@ require_once('class_WikiParser.php');
 class WPW_WikiParser extends WikiParser {
 	//parent::WikiParser();
 	function wiki_link($topic) {
-		$wiki = get_page_by_title($topic);
+		global $wpdb;
+		$wiki = $wpdb->get_var('SELECT `p`.`id` FROM `' . $wpdb->posts . '` `p` WHERE `p`.`post_type` = "wiki" AND `p`.`post_name` = "' . str_replace(' ', '-', $topic) .'"');
+		var_dump($wiki);
 		
 		if (!$wiki)
 			return 'new?redlink=1&title='.$topic;
@@ -13,6 +15,7 @@ class WPW_WikiParser extends WikiParser {
 	}
 	
 	function handle_internallink($matches) {
+		global $wpdb;
 		//var_dump($matches);
 		$nolink = false;
 		
@@ -29,7 +32,7 @@ class WPW_WikiParser extends WikiParser {
 		
 		$title = preg_replace('/\(.*?\)/','',$title);
 		$title = preg_replace('/^.*?\:/','',$title);
-		$wiki = get_page_by_title($href);
+		$wiki = $wpdb->get_var('SELECT `p`.`id` FROM `' . $wpdb->posts . '` `p` WHERE `p`.`post_type` = "wiki" AND `p`.`post_name` = "' . str_replace(' ', '-', $href) .'"');
 		
 		if(!$wiki)
 			$redlink = 'style="color:red"';
