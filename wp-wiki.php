@@ -813,7 +813,8 @@ function wpw_create_new_and_redirect() {
 		update_post_meta($new_wiki_id, '_wiki_page', 1);
 	}
 	
-	wp_redirect( get_bloginfo('template_url') );
+	wp_redirect( get_option('siteurl') . '/wiki/' . str_replace(' ', '-', $_GET['title']) );
+	exit();
 	}
 }
 
