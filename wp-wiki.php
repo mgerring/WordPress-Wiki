@@ -609,6 +609,7 @@ function wpw_wiki_interface($content) {
 	global $post;
 	
 	get_option('wpw_options');
+	$
 	
 	//Create the "edit" interface
 	$textarea = '<textarea style="width:100%;height:200px;" id="area1">'.$content.'</textarea>';
@@ -623,6 +624,10 @@ function wpw_wiki_interface($content) {
 	
 	// table_of_contents($content)
 	
+	$content = '<div id="wpw_content">'.$content.'</div>';
+	$edit = '<div id="wpw_edit">'.$textarea.'<button id="wpw_save">Save</button></div>';
+	$history = '<div id="wpw_view_history">'.wiki_post_revisions().'</div>';
+	
 	return '
 		<div id="wpw_tabs">
 		<ul id="wpw_tab_nav">
@@ -630,12 +635,10 @@ function wpw_wiki_interface($content) {
 			<li><a href="#wpw_edit">Edit</a></li>
 			<li><a href="#wpw_view_history">View History</a></li>
 		</ul>
-		'.$warning.'
-		<div id="wpw_content">'.$content.'</div>
-		
-		<div id="wpw_edit">'.$textarea.'<button id="wpw_save">Save</button></div>
-		
-		<div id="wpw_view_history">'.wiki_post_revisions().'</div>
+		'.$warning.
+		$content.
+		$edit.
+		$history.'
 		</div>
 	';
 }
