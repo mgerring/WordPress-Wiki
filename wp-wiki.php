@@ -523,6 +523,9 @@ function wpw_set_query() {
 	}
 }
 
+if( !defined('DOING_AJAX') && isset($_POST['wpw_editor_content']) )
+	add_action('init','wpw_no_js_save');
+
 add_action('get_header','wpw_invoke_editor');
 add_action('wp_print_styles','wpw_print_styles');
 
@@ -562,9 +565,9 @@ function wpw_invoke_editor() {
 			add_action('wp_footer','wpw_inline_editor');
 			wp_enqueue_script('jquery-ui-tabs');
 		
-			if (!isset($wpw_options['alt_syntax'])) {
+			if (!isset($wpw_options['alt_syntax']))
 				wp_enqueue_script('nicedit',plugin_dir_url(__FILE__).'nicedit/nicEdit.js','','',true);	
-			}
+				
 		} else {
 			add_filter('the_content','wpw_nope');
 		}
@@ -610,10 +613,13 @@ function wpw_get_content($content, $class = null ){
 }
 
 function wpw_get_edit($content, $class = null ){
+	global $post;
 	return '<div id="wpw_edit_div" '.$class.'>
-				<form name="wpw_edit_form" action="" method="post">
-					<textarea style="width:100%;height:200px;" id="area1">'.$content.'</textarea>
+				<form action="" method="post">
+					<textarea name="wpw_editor_content" style="width:100%;height:200px;" id="area1">'.$content.'</textarea>
+					'.wp_nonce_field('wpw_edit_form').'
 					<input type="submit" value="save" id="wpw_save" />
+					<input type="hidden" value="'.$post->ID.'" name="wpw_id" />
 				</form>
 			</div>';
 }
@@ -660,6 +666,7 @@ function wpw_wiki_interface($content) {
 		$interface = $_GET['wpw_action'];
 	
 	(isset($post->revision_warning)) ? $warning = $post->revision_warning : $warning = false;
+	(isset($post->wpw_post_saved)) ? $update = "Post updated!" : $update = false;
 	
 	foreach( $wiki_interface as $wiki ):
 		
@@ -673,14 +680,16 @@ function wpw_wiki_interface($content) {
 	
 	endforeach;
 		
-	return '
+	return 
+		$update.'
 		<div id="wpw_tabs">
 		<ul id="wpw_tab_nav">
 			<li><a id="wpw_read" href="?wpw_action=content">Read</a></li>
 			<li><a id="wpw_edit" href="?wpw_action=edit">Edit</a></li>
 			<li><a id="wpw_view_history" href="?wpw_action=history">View History</a></li>
 		</ul>
-		'.$return.'
+		'.$warning
+		 .$return.'
 		</div>
 	';
 }
@@ -695,7 +704,8 @@ function wpw_inline_editor() {
 	
 	$ajax_args = '	action : "wpw_ajax_save",
 					wpw_editor_content : '.$get_content_to_save.',
-					wpw_id : "'.$post->ID.'"';
+					wpw_id : "'.$post->ID.'",
+					_wpnonce : $("#_wpnonce").val()';
 	
 	if ( isset($wpw_options['revision_pending']) && $wpw_options['revision_pending'] == "true" )
 		$ajax_args .= ', wpw_revision_stack: "1"';
@@ -739,70 +749,70 @@ function wpw_save_code($match) {
 }
 
 function wpw_save_post() {
-	if (current_user_can('edit_posts')) {
-	if ($_POST != null) {
-		extract($_POST);
-	}
-	//First, save everything marked as code
-	$regex = '/(?<=^code>|pre>|%%%).+?(?=<\/$1$>)/sm';
-	$wpw_editor_content = preg_replace_callback($regex, 'wpw_save_code',  $wpw_editor_content);
-	/*
-	//Checks to see if changes in the draft page are being committed to the parent page.
-	if ($commit == 1) {
-		// If so, we use the parent ID.
-		$pid = $bio_id;
-	} else {
-		//Otherwise, we need to check if we're reverting the draft to a prior revision.
-		//This bit of code takes our revision ID and gets the ID of the page it belongs to.
-		$rev = wp_is_post_revision($draft_id);
-		if ($rev) {
-			$pid = $rev;
-		} else {
-		//If we're making new changes to the draft, and not committing it, and not working from a revision, we simply
-		//use the ID passed along with the form.
-		$pid = $draft_id;
+	if (current_user_can('edit_posts') && isset($_POST['_wpnonce']) && wp_verify_nonce($_POST['_wpnonce'], 'wpw_edit_form')) {
+		if ($_POST['wpw_editor_content'] != null) {
+			extract($_POST);
 		}
-	}
-	*/
-	$n_post = array();
-	//if (!isset($wpw_revision_stack)) {
-		
-		$n_post['post_content'] = apply_filters('wp_insert_post_data',$wpw_editor_content);
+		//First, save everything marked as code
+		$regex = '/(?<=^code>|pre>|%%%).+?(?=<\/$1$>)/sm';
+		$wpw_editor_content = preg_replace_callback($regex, 'wpw_save_code',  $wpw_editor_content);
 		/*
-		if ($commit != 1) {
-			$n_post['post_content'] .='[swrmeta dob="'.$dob.'" loc="'.$loc.'" state="'.$state.'" sum_content="'.htmlspecialchars($sum_content).'" lnk1="'.$lnk1.'" lnk2="'.$lnk2.'" lnk3="'.$lnk3.'"]';
+		//Checks to see if changes in the draft page are being committed to the parent page.
+		if ($commit == 1) {
+			// If so, we use the parent ID.
+			$pid = $bio_id;
+		} else {
+			//Otherwise, we need to check if we're reverting the draft to a prior revision.
+			//This bit of code takes our revision ID and gets the ID of the page it belongs to.
+			$rev = wp_is_post_revision($draft_id);
+			if ($rev) {
+				$pid = $rev;
+			} else {
+			//If we're making new changes to the draft, and not committing it, and not working from a revision, we simply
+			//use the ID passed along with the form.
+			$pid = $draft_id;
+			}
 		}
 		*/
-		$n_post['ID'] = $wpw_id;
-	// Insert the post into the database
-		return wp_update_post( $n_post );
-	/*
-	} else {
 		$n_post = array();
-		$n_post['post_parent'] = $wpw_id;
-		$n_post['post_title'] = get_the_title($wpw_id);
-		$n_post['post_content'] = clean_pre(apply_filters('wp_insert_post_data',htmlspecialchars_decode($wpw_editor_content)));
-		//$n_post['post_content'] = $wpw_editor_content;
-		$n_post['post_status'] = 'pending';
-			//$n_post['post_author'] = 1;
-		$n_post['post_type'] = 'wiki';
-			//$n_post['page_template'] = 'wiki.php';
+		//if (!isset($wpw_revision_stack)) {
+			
+			$n_post['post_content'] = apply_filters('wp_insert_post_data',$wpw_editor_content);
+			/*
+			if ($commit != 1) {
+				$n_post['post_content'] .='[swrmeta dob="'.$dob.'" loc="'.$loc.'" state="'.$state.'" sum_content="'.htmlspecialchars($sum_content).'" lnk1="'.$lnk1.'" lnk2="'.$lnk2.'" lnk3="'.$lnk3.'"]';
+			}
+			*/
+			$n_post['ID'] = $wpw_id;
 		// Insert the post into the database
-		if (wp_insert_post( $n_post ))
-			die('Post submitted for review!');
-	
-	*/
-	/*
-	$bio_meta_keys = array('dob','loc','state','lnks','notes');
-	foreach ($bio_meta_keys as $key => $value) {
-		update_post_meta($pid, $value, strip_tags($$value), FALSE);
+			return wp_update_post( $n_post );
+		/*
+		} else {
+			$n_post = array();
+			$n_post['post_parent'] = $wpw_id;
+			$n_post['post_title'] = get_the_title($wpw_id);
+			$n_post['post_content'] = clean_pre(apply_filters('wp_insert_post_data',htmlspecialchars_decode($wpw_editor_content)));
+			//$n_post['post_content'] = $wpw_editor_content;
+			$n_post['post_status'] = 'pending';
+				//$n_post['post_author'] = 1;
+			$n_post['post_type'] = 'wiki';
+				//$n_post['page_template'] = 'wiki.php';
+			// Insert the post into the database
+			if (wp_insert_post( $n_post ))
+				die('Post submitted for review!');
+		
+		*/
+		/*
+		$bio_meta_keys = array('dob','loc','state','lnks','notes');
+		foreach ($bio_meta_keys as $key => $value) {
+			update_post_meta($pid, $value, strip_tags($$value), FALSE);
+		}
+		update_post_meta($pid, 'sum_content',htmlspecialchars_decode($sum_content));
+		*/
+	} else {
+		//This is the error message that displays if a user has no credentials to edit pages.
+		die(__('You don\'t have permission to do that.'));
 	}
-	update_post_meta($pid, 'sum_content',htmlspecialchars_decode($sum_content));
-	*/
-} else {
-	//This is the error message that displays if a user has no credentials to edit pages.
-	die(__('You don\'t have permission to do that.'));
-}
 }
 
 function wpw_ajax_save() {
@@ -811,7 +821,17 @@ function wpw_ajax_save() {
 }
 
 function wpw_no_js_save() {
-	wpw_save_post();
+	echo 'YA WE WERKIN';
+	if ( isset( $_POST['wpw_editor_content'] ) && wp_verify_nonce( $_POST['_wpnonce'], 'wpw_edit_form' ) ):
+		if ( wpw_save_post() ):
+			echo "Fukken werx";
+			$post->wpw_post_saved = true;
+		else:
+			echo 'aint work';
+		endif;
+	else:
+		echo 'condition failed';
+	endif;
 }
 
 
