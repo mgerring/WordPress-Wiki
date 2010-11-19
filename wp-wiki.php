@@ -22,7 +22,7 @@ if(function_exists('register_post_type') && $wp_version >= 3.0)
 	add_action('init','register_wiki_post_type');
 
 // Hoook into the 'wp_dashboard_setup' action to register our other functions
-add_action('wp_dashboard_setup', 'wiki_dashboard_widget' );
+//add_action('wp_dashboard_setup', 'wiki_dashboard_widget' );
 
 //hook to check whether a page has been edited
 add_action('save_post', 'wiki_page_edit_notification');
@@ -164,7 +164,7 @@ function wiki_post_revisions() {
 		foreach ($revisions as $revision) {
 			if(wp_get_post_autosave($post->ID)->ID != $revision->ID) {
 				$author = get_userdata($revision->post_author);
-				$date = date(__('m/d/y g:i a'), mktime($revision->post_modified));
+				$date = date(__('m/d/y g:i a'), mktime($revision->post_modified) );
 				$revision_title = sprintf(__('Revision @ %1s by %2s'), $date, $author->display_name);
 				$output.= '<a href="'.get_permalink($post->ID).'?revision='.$revision->ID.'">'.$revision_title.'</a><br />';
 			}
@@ -199,8 +199,7 @@ function wpw_table_of_contents($content) {
     // Check whether table of contents is set or not
 	// second condition checks: are we on the front page and
 	// is front page displaying set. - tony@irational.org
-	if ( $wiki_toc_data != 1
-		|| (is_front_page() && !$wpw_options['show_toc_onfrontpage']) ) {
+	if ( is_front_page() && !$wpw_options['show_toc_onfrontpage']) {
 		return $content;
 	}
 
@@ -545,8 +544,8 @@ function wpw_print_styles() {
 					font-weight:bold;
 					border-bottom:1px dotted #000;
 				}
-				.ui-tabs .ui-tabs-hide {
-     				display: none;
+				.ui-tabs .ui-tabs-hide, .wpw-hide-it {
+     				display: none!important;
 				}
 		</style>';
 }
@@ -574,6 +573,7 @@ function wpw_invoke_editor() {
 add_action('wp_ajax_wpw_ajax_save','wpw_ajax_save');
 
 //First, if the user isn't logged in
+
 function wpw_nope($content) {
 	global $post;
 	$content = wpw_wiki_parser($content, $post->post_title);
@@ -605,39 +605,81 @@ function wpw_wiki_parser($content, $title) {
 	return $content;
 }
 
+function wpw_get_content($content, $class = null ){
+	return '<div id="wpw_read_div" '.$class.'>'.wpw_table_of_contents( wpw_wiki_parser( $content,$post->post_title ) ).'</div>';	
+}
+
+function wpw_get_edit($content, $class = null ){
+	return '<div id="wpw_edit_div" '.$class.'>
+				<form name="wpw_edit_form" action="" method="post">
+					<textarea style="width:100%;height:200px;" id="area1">'.$content.'</textarea>
+					<input type="submit" value="save" id="wpw_save" />
+				</form>
+			</div>';
+}
+
+function wpw_get_history($content, $class = null){
+	return '<div id="wpw_view_history_div" '.$class.'>'.wiki_post_revisions().'</div>';
+}
+
+function wpw_get_section($content = null, $section, $class) {
+	if ($content == null):
+		global $post;
+		$content = $post->post_content;
+	endif;
+	
+	if (in_array($section, array('content','edit','history'))):
+		$func = 'wpw_get_'.$section;
+		return $func($content, $class);
+	endif;
+}
+
+add_action('wp_ajax_wpw_ajax_it_up', 'wpw_ajax_it_up');
+add_action('wp_ajax_nopriv_wpw_ajax_it_up', 'wpw_ajax_it_up');
+
+
+function wpw_ajax_it_up() {
+	if ( in_array($_POST['wpw_section'], array('content','edit','history') ) ):
+		$section = $_POST['wpw_section'];
+		die( wpw_get_section(null, $section) );
+	else:
+		die();
+	endif;
+}
+
 function wpw_wiki_interface($content) {
 	global $post;
 	
 	get_option('wpw_options');
-
-	//Create the "edit" interface
-	$textarea = '<textarea style="width:100%;height:200px;" id="area1">'.$content.'</textarea>';
 	
-	//Handle revisions
-	(isset($post->revision_warning)) ? $warning = $post->revision_warning : $warning = false;
+	$wiki_interface = array('content','edit','history');
+	$return = "";
+	$interface = "content";
 	
-	//Massage the content
-	//var_dump($post->post_content);
-	$content = wpw_wiki_parser($content,$post->post_title);
-	$content = wpw_table_of_contents($content);
+	if ( in_array( $_GET['wpw_action'], $wiki_interface ) )
+		$interface = $_GET['wpw_action'];
 	
-	// table_of_contents($content)
 	
-	$content = '<div id="wpw_content">'.$content.'</div>';
-	$edit = '<div id="wpw_edit">'.$textarea.'<button id="wpw_save">Save</button></div>';
-	$history = '<div id="wpw_view_history">'.wiki_post_revisions().'</div>';
+	foreach( $wiki_interface as $wiki ):
+		
+		if ( $interface != $wiki ):
+			$class = 'class="wpw-hide-it"';
+		else:
+			$class = null;
+		endif;
+			
+		$return .= wpw_get_section( $content, $wiki, $class );
 	
+	endforeach;
+		
 	return '
 		<div id="wpw_tabs">
 		<ul id="wpw_tab_nav">
-			<li id="wpw_read_link"><a id="wpw_read" href="?wpw_action=content">Read</a></li>
-			<li><a id="wpw_edit" href="?wpw_action=content">Edit</a></li>
-			<li><a id="wpw_view_history" href="?wpw_action=view_history">View History</a></li>
+			<li><a id="wpw_read" href="?wpw_action=content">Read</a></li>
+			<li><a id="wpw_edit" href="?wpw_action=edit">Edit</a></li>
+			<li><a id="wpw_view_history" href="?wpw_action=history">View History</a></li>
 		</ul>
-		'.$warning.
-		$content.
-		$edit.
-		$history.'
+		'.$return.'
 		</div>
 	';
 }
@@ -664,19 +706,28 @@ function wpw_inline_editor() {
 			
 			'.$nicedit.'
 				
-			$("#wpw_save").click(function() {
+			$("#wpw_save").click(function( e ) {
+				e.preventDefault();
 				data = {
 					'.$ajax_args.'
 				};
 				$.post("'.$wpw_ajax_url.'", data, function(results) {
-					$("#wpw_view_history").load(location.href+" #wpw_view_history>*", function() {
-						$("#wpw_content").load(location.href+" #wpw_content>*", function() {
+					$("#wpw_view_history_div").load(location.href+" #wpw_view_history_div>*", function() {
+						$("#wpw_read_div").load(location.href+" #wpw_read_div>*", function() {
 							alert(results);
 						});
 					});
 				});
 			});
-			$("#wpw_tabs").tabs();
+			
+			$("#wpw_tab_nav li a").each(function() {
+				$(this).attr( "href", "#"+$(this).attr( "id" )+"_div" );
+			});
+			
+			$(window).load(function() {
+				$(".wpw-hide-it").removeClass("wpw-hide-it");
+				$("#wpw_tabs").tabs();
+			});	
 		});
 	</script>
 	';
@@ -686,7 +737,7 @@ function wpw_save_code($match) {
 	return '<nowiki>'.htmlentities($match).'</nowiki>';
 }
 
-function wpw_ajax_save() {
+function wpw_save_post() {
 	if (current_user_can('edit_posts')) {
 	if ($_POST != null) {
 		extract($_POST);
@@ -723,8 +774,7 @@ function wpw_ajax_save() {
 		*/
 		$n_post['ID'] = $wpw_id;
 	// Insert the post into the database
-		if (wp_update_post( $n_post ))
-			die('Post saved!');
+		return wp_update_post( $n_post );
 	/*
 	} else {
 		$n_post = array();
@@ -752,6 +802,15 @@ function wpw_ajax_save() {
 	//This is the error message that displays if a user has no credentials to edit pages.
 	die(__('You don\'t have permission to do that.'));
 }
+}
+
+function wpw_ajax_save() {
+	if (wpw_save_post())
+		die('Post saved!');
+}
+
+function wpw_no_js_save() {
+	wpw_save_post();
 }
 
 
