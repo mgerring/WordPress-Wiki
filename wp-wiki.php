@@ -659,6 +659,7 @@ function wpw_wiki_interface($content) {
 	if ( in_array( $_GET['wpw_action'], $wiki_interface ) )
 		$interface = $_GET['wpw_action'];
 	
+	(isset($post->revision_warning)) ? $warning = $post->revision_warning : $warning = false;
 	
 	foreach( $wiki_interface as $wiki ):
 		
