@@ -641,19 +641,6 @@ function wpw_get_section($content = null, $section, $class) {
 	endif;
 }
 
-add_action('wp_ajax_wpw_ajax_it_up', 'wpw_ajax_it_up');
-add_action('wp_ajax_nopriv_wpw_ajax_it_up', 'wpw_ajax_it_up');
-
-
-function wpw_ajax_it_up() {
-	if ( in_array($_POST['wpw_section'], array('content','edit','history') ) ):
-		$section = $_POST['wpw_section'];
-		die( wpw_get_section(null, $section) );
-	else:
-		die();
-	endif;
-}
-
 function wpw_wiki_interface($content) {
 	global $post;
 	
