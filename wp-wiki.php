@@ -3,7 +3,7 @@
 Plugin Name:WordPress Wiki
 Plugin URI: http://wordpress.org/extend/plugins/wordpress-wiki/
 Description: Add Wiki functionality to your wordpress site.
-Version: 0.9a2
+Version: 0.9b
 Author: Instinct Entertainment/Matthew Gerring
 Author URI: http://www.instinct.co.nz
 /* Major version for "major" releases */
