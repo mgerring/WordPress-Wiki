@@ -191,6 +191,7 @@ function wpw_table_of_contents($content) {
 	*/
 	global $wpdb,$post;
 	$wpw_options = get_option('wpw_options');
+	(get_post_meta($post->ID, '_wiki_page_toc', true) == 1) ? $toc = true : $toc = false;
 	
 	if (!wiki_back_compat('front_end_check')) {
 		return $content;
@@ -199,7 +200,7 @@ function wpw_table_of_contents($content) {
     // Check whether table of contents is set or not
 	// second condition checks: are we on the front page and
 	// is front page displaying set. - tony@irational.org
-	if ( is_front_page() && !$wpw_options['show_toc_onfrontpage']) {
+	if ( !$toc || is_front_page() && !$wpw_options['show_toc_onfrontpage'] ) {
 		return $content;
 	}
 
