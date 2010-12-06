@@ -164,7 +164,7 @@ function wiki_post_revisions() {
 	if($revisions) {
 		//Loop through them!
 		foreach ($revisions as $revision) {
-			if(wp_get_post_autosave($post->ID)->ID != $revision->ID) {
+			if( @wp_get_post_autosave($post->ID)->ID != $revision->ID) {
 				$author = get_userdata($revision->post_author);
 				$date = date(__('m/d/y g:i a'), mktime($revision->post_modified) );
 				$revision_title = sprintf(__('Revision @ %1s by %2s'), $date, $author->display_name);
