@@ -612,6 +612,7 @@ function wpw_wiki_parser($content, $title) {
 }
 
 function wpw_get_content($content, $class = null ){
+	global $post;
 	return '<div id="wpw_read_div" '.$class.'>'.wpw_table_of_contents( wpw_wiki_parser( $content,$post->post_title ) ).'</div>';	
 }
 
@@ -652,7 +653,7 @@ function wpw_wiki_interface($content) {
 	$return = "";
 	$interface = "content";
 	
-	if ( in_array( $_GET['wpw_action'], $wiki_interface ) )
+	if ( in_array( @$_GET['wpw_action'], $wiki_interface ) )
 		$interface = $_GET['wpw_action'];
 	
 	(isset($post->revision_warning)) ? $warning = $post->revision_warning : $warning = false;
