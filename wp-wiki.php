@@ -18,7 +18,7 @@ add_action('init', 'wiki_enqueue_scripts', 9);
 add_action('init', 'wiki_add_feed', 11);
 
 //Post Types
-if(function_exists('register_post_type') && $wp_version >= 3.0)
+if(function_exists('register_post_type') && $GLOBALS['wp_version'] >= 3.0)
 	add_action('init','register_wiki_post_type');
 
 // Hoook into the 'wp_dashboard_setup' action to register our other functions
