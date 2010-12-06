@@ -311,15 +311,15 @@ function wpw_meta_box_inner() {
 	<?php  
 	}
 	
-	if(wiki_back_compat('check_no_post',$_GET['post'])) {
+	if(wiki_back_compat('check_no_post',@$_GET['post'])) {
 	?>
 		<h5><?php _e('Wiki Table of Contents'); ?></h5>	
-		<input type="checkbox" <?php wpw_check_meta($_GET['post'], '_wiki_page_toc', 1); ?> name="wpw_toc" value="true" />
+		<input type="checkbox" <?php wpw_check_meta(@$_GET['post'], '_wiki_page_toc', 1); ?> name="wpw_toc" value="true" />
 		<label for="wpw_toc"><?php _e('Show table of contents'); ?></label>
 		
 		<br />
 		
-		<?php if( wiki_back_compat('check_post_parent' , $_GET['post']) ) { ?>
+		<?php if( wiki_back_compat('check_post_parent' , @$_GET['post']) ) { ?>
 			<h5><?php _e('Approve Revision'); ?></h5>	
 			<input type="checkbox" name="wpw_approve_revision" value="true" />
 			<label for="wpw_approve_revision"><?php _e('Approve this revision'); ?></label>
