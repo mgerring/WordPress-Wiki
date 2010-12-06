@@ -482,7 +482,7 @@ if (!wp_next_scheduled('cron_email_hook')) {
 add_action( 'cron_email_hook', 'cron_email' );
 
 function cron_email() {
-	$wpw_options = get_options('wpw_options');
+	$wpw_options = get_option('wpw_options');
     
     if ($wpw_options['cron_email'] == 1) {
         $last_email = $wpw_options['cron_last_email_date'];
