@@ -18,7 +18,7 @@ add_action('init', 'wiki_enqueue_scripts', 9);
 add_action('init', 'wiki_add_feed', 11);
 
 //Post Types
-if(function_exists('register_post_type') && $wp_version >= 3.0)
+if(function_exists('register_post_type') && $GLOBALS['wp_version'] >= 3.0)
 	add_action('init','register_wiki_post_type');
 
 // Hoook into the 'wp_dashboard_setup' action to register our other functions
@@ -164,7 +164,7 @@ function wiki_post_revisions() {
 	if($revisions) {
 		//Loop through them!
 		foreach ($revisions as $revision) {
-			if(wp_get_post_autosave($post->ID)->ID != $revision->ID) {
+			if( @wp_get_post_autosave($post->ID)->ID != $revision->ID) {
 				$author = get_userdata($revision->post_author);
 				$date = date(__('m/d/y g:i a'), mktime($revision->post_modified) );
 				$revision_title = sprintf(__('Revision @ %1s by %2s'), $date, $author->display_name);
@@ -482,7 +482,7 @@ if (!wp_next_scheduled('cron_email_hook')) {
 add_action( 'cron_email_hook', 'cron_email' );
 
 function cron_email() {
-	$wpw_options = get_options('wpw_options');
+	$wpw_options = get_option('wpw_options');
     
     if ($wpw_options['cron_email'] == 1) {
         $last_email = $wpw_options['cron_last_email_date'];
@@ -612,6 +612,7 @@ function wpw_wiki_parser($content, $title) {
 }
 
 function wpw_get_content($content, $class = null ){
+	global $post;
 	return '<div id="wpw_read_div" '.$class.'>'.wpw_table_of_contents( wpw_wiki_parser( $content,$post->post_title ) ).'</div>';	
 }
 
@@ -652,7 +653,7 @@ function wpw_wiki_interface($content) {
 	$return = "";
 	$interface = "content";
 	
-	if ( in_array( $_GET['wpw_action'], $wiki_interface ) )
+	if ( in_array( @$_GET['wpw_action'], $wiki_interface ) )
 		$interface = $_GET['wpw_action'];
 	
 	(isset($post->revision_warning)) ? $warning = $post->revision_warning : $warning = false;
