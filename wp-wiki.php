@@ -126,7 +126,9 @@ function register_wiki_post_type() {
 		'edit_wiki_page'=>true,
 		'edit_wiki_pages'=>true,
 		'edit_others_wiki_pages'=>true,
-		'publish_wiki_pages'=>true
+		'publish_wiki_pages'=>true,
+		'delete_wiki_page'=>true,
+		'delete_others_wiki_pages'=>false
 	);
 	
 	foreach ($all_roles as $role => $name) {
