@@ -30,6 +30,8 @@ add_action('save_post', 'wiki_page_edit_notification');
 
 //include the admin page
 include('wpw-admin-menu.php');
+//include the class up here so it doesn't get re-declared- fixes issue #4 on GitHub. Thanks Nexiom!
+include('lib/WPW_WikiParser.php');
 
 /**
 * Guess the wp-content and plugin urls/paths
@@ -602,13 +604,13 @@ function wpw_substitute_in_revision_content($content) {
 
 function wpw_wiki_parser($content, $title) {
 	global $post;
-	include('lib/WPW_WikiParser.php');
 	$wiki_parser = new WPW_WikiParser();
 	$wiki_parser->reference_wiki = get_bloginfo('url').'/wiki/';
 	$wiki_parser->suppress_linebreaks = true;	
 	$content = $wiki_parser->parse($content, $title);
 	$content = wpautop($content);	
 	return $content;
+	unset($wiki_parser);
 }
 
 function wpw_get_content($content, $class = null ){
