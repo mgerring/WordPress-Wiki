@@ -815,16 +815,10 @@ function wpw_ajax_save() {
 }
 
 function wpw_no_js_save() {
-	echo 'YA WE WERKIN';
 	if ( isset( $_POST['wpw_editor_content'] ) && wp_verify_nonce( $_POST['_wpnonce'], 'wpw_edit_form' ) ):
 		if ( wpw_save_post() ):
-			echo "Fukken werx";
 			$post->wpw_post_saved = true;
-		else:
-			echo 'aint work';
 		endif;
-	else:
-		echo 'condition failed';
 	endif;
 }
 
