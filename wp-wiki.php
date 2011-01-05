@@ -116,7 +116,8 @@ function register_wiki_post_type() {
 		'public'=>true,
 		'capability_type'=>'wiki_page',
 		'supports' => array('title','editor','author','thumbnail','excerpt','comments','revisions','custom-fields','page-attributes'),
-		'hierarchical' => true
+		'hierarchical' => true,
+		'rewrite' => array('slug' => 'wiki', 'with_front' => FALSE)
 	));
 	
 	global $wp_roles;
