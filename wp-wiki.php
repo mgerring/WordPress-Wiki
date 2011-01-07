@@ -564,7 +564,7 @@ function wpw_invoke_editor() {
 	global $post;
 	if ( wiki_back_compat('front_end_check') ) {
 		$wpw_options = get_option('wpw_options');
-		if ( current_user_can('edit_wiki') ) {
+		//if ( current_user_can('edit_wiki') ) {
 			remove_filter('the_content', 'wpautop');
 			add_filter('the_content','wpw_substitute_in_revision_content',11);
 			add_filter('the_content','wpw_wiki_interface',12);
@@ -574,12 +574,13 @@ function wpw_invoke_editor() {
 			if (!isset($wpw_options['alt_syntax']))
 				wp_enqueue_script('nicedit',plugin_dir_url(__FILE__).'nicedit/nicEdit.js','','',true);	
 				
-		} else {
-			add_filter('the_content','wpw_nope');
-		}
+		//} else {
+		//	add_filter('the_content','wpw_nope');
+		//}
 	}
 }
 add_action('wp_ajax_wpw_ajax_save','wpw_ajax_save');
+add_action('wp_ajax_nopriv_wpw_ajax_save','wpw_ajax_save');
 
 //First, if the user isn't logged in
 
@@ -743,7 +744,7 @@ function wpw_save_code($match) {
 }
 
 function wpw_save_post() {
-	if (current_user_can('edit_posts') && isset($_POST['_wpnonce']) && wp_verify_nonce($_POST['_wpnonce'], 'wpw_edit_form')) {
+	if (isset($_POST['_wpnonce']) && wp_verify_nonce($_POST['_wpnonce'], 'wpw_edit_form')) {
 		if ($_POST['wpw_editor_content'] != null) {
 			extract($_POST);
 		}
