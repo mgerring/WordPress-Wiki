@@ -860,13 +860,9 @@ function wpw_fake_page() {
 	global $wp_query, $post;
   	if($wp_query->is_404 && isset($_GET['redlink']) && $_GET['redlink'] == 1 ) {
   		$new_title = strip_tags($_GET['title']);
-  		if (current_user_can('edit_posts')) {
-  			$new_page_nonce = wp_create_nonce('wpw_new_page_nonce');
-  			$get_params = '?new_wiki_page=true&nonce='.$new_page_nonce.'&title='.$new_title;
-  			$new_link = '<a href="'.get_bloginfo('url').'/wiki/new'.$get_params.'">Click here to create it.</a>';
-  		} else {
-  			$new_link = '<a href="'.wp_login_url(curPageURL()).'">Log in or register an account to create it.</a>';
-  		}
+		$new_page_nonce = wp_create_nonce('wpw_new_page_nonce');
+		$get_params = '?new_wiki_page=true&nonce='.$new_page_nonce.'&title='.$new_title;
+		$new_link = '<a href="'.get_bloginfo('url').'/wiki/new'.$get_params.'">Click here to create it.</a>';
 		$id=-42; // need an id
 		$post = new stdClass();
 			$post->ID= $id;
@@ -897,27 +893,49 @@ function wpw_fake_page() {
 add_action('init','wpw_create_new_and_redirect');
 
 function wpw_create_new_and_redirect() {
-	//echo 'workin?';
-	if (isset($_GET['new_wiki_page']) && $_GET['new_wiki_page'] == 'true' && wp_verify_nonce($_GET['nonce'], 'wpw_new_page_nonce')) {
-		
-	global $wp_version;
-	$new_wiki = array();
-	$new_wiki['post_title'] = $_GET['title'];
-	$new_wiki['post_status'] = 'publish';
-	
-	if ($wp_version >= 3.0) {
-		$new_wiki['post_type'] = 'wiki';
-	}
-	
-	$new_wiki_id = wp_insert_post($new_wiki);
-	
-	if($wp_version <= 3.0) {
-		update_post_meta($new_wiki_id, '_wiki_page', 1);
-	}
-	
-	wp_redirect( get_option('siteurl') . '/wiki/' . str_replace(' ', '-', $_GET['title']) );
-	exit();
-	}
+    //echo 'workin?';
+    if (isset($_GET['new_wiki_page']) && $_GET['new_wiki_page'] == 'true' && wp_verify_nonce($_GET['nonce'], 'wpw_new_page_nonce')) {
+
+    global $wp_version;
+    global $wpdb;
+
+    $new_wiki = array();
+
+    $title = strip_tags($_GET['title']);
+    $pieces = explode(':',$title,2);
+    if (count($pieces) == 2) {
+            list($namespace,$topic) = $pieces;
+            $namespace = strtolower(preg_replace('/[ -]+/', '-', $namespace));
+            $parent_id = $wpdb->get_var('SELECT id FROM `' . $wpdb->posts . '` WHERE post_name = "' . $namespace .'"');
+            if ($parent_id)
+                    $new_wiki['post_parent'] = $parent_id;
+    }
+    else {  
+            $namespace = '';
+            $topic = $title;
+    }
+    $topic = strtolower(preg_replace('/[ -]+/', '-', $topic));
+    $url = get_option('siteurl') . '/wiki/' . ($namespace ? $namespace.'/' : '') . $topic;
+
+    $new_wiki['post_name'] = $topic;
+    $new_wiki['post_title'] = $title;
+    $new_wiki['post_content'] = 'Click the "Edit" tab to add content to this page.';
+    $new_wiki['guid'] = $url;
+    $new_wiki['post_status'] = 'publish';
+
+    if ($wp_version >= 3.0) {
+            $new_wiki['post_type'] = 'wiki';
+    }
+
+    $new_wiki_id = wp_insert_post($new_wiki);
+
+    if($wp_version <= 3.0) {
+            update_post_meta($new_wiki_id, '_wiki_page', 1);
+    }
+
+    wp_redirect( $url );
+    exit();
+    }
 }
 
 function wpw_show_me() {

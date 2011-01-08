@@ -2,47 +2,49 @@
 require_once('class_WikiParser.php');
 
 class WPW_WikiParser extends WikiParser {
-	//parent::WikiParser();
-	function wiki_link($topic) {
-		global $wpdb;
-		$wiki = $wpdb->get_var('SELECT `p`.`id` FROM `' . $wpdb->posts . '` `p` WHERE `p`.`post_type` = "wiki" AND `p`.`post_name` = "' . str_replace(' ', '-', $topic) .'"');
-		
-		if (!$wiki)
-			return 'new?redlink=1&title='.$topic;
-		else
-			return strtolower(str_replace(' ','-',$topic));
-	}
+	// 2011-01-02 arjen adjusted to deal with namespaces
+    function wiki_link($topic,$namespace='') {
+	    global $wpdb;
+	    $wiki = $wpdb->get_var('SELECT `p`.`id` FROM `' . $wpdb->posts . '` `p` WHERE `p`.`post_type` = "wiki" AND `p`.`post_name` = "' . preg_replace('/[ -]+/', '-', $topic) .'"');
 	
-	function handle_internallink($matches) {
-		global $wpdb;
-		//var_dump($matches);
-		$nolink = false;
-		
-		$href = $matches[4];
-		$title = $matches[6] ? $matches[6] : $href.$matches[7];
-		$namespace = $matches[3];
+	    if (!$wiki)
+	    	return 'new?redlink=1&title='.($namespace ? $namespace.':' : '').$topic;
+	    else
+			return ($namespace ? strtolower(preg_replace('/[ -]+/', '-', $namespace)).'/' : '') . strtolower(preg_replace('/[ -]+/', '-', $topic));
+    }
+	
+	// 2011-01-02 arjen adjusted to deal with namespaces
+    function handle_internallink($matches) {
+        global $wpdb;
+        //var_dump($matches);
+        $nolink = false;
 
-		if ($namespace=='Image') {
-			$options = explode('|',$title);
-			$title = array_pop($options);
-			
-			return $this->handle_image($href,$title,$options);
-		}		
+        $href = $matches[4];
+        $title = $matches[6] ? $matches[6] : $href.$matches[7];
+        $namespace = $matches[3];
+
+        if ($namespace=='Image') {
+            $options = explode('|',$title);
+            $title = array_pop($options);
+
+            return $this->handle_image($href,$title,$options);
+        }
 		
-		$title = preg_replace('/\(.*?\)/','',$title);
-		$title = preg_replace('/^.*?\:/','',$title);
-		$wiki = $wpdb->get_var('SELECT `p`.`id` FROM `' . $wpdb->posts . '` `p` WHERE `p`.`post_type` = "wiki" AND `p`.`post_name` = "' . str_replace(' ', '-', $href) .'"');
-		
-		if(!$wiki)
+		$href = preg_replace('/[^a-zA-Z0-9-\s]/', '', $href);
+        $title = preg_replace('/\(.*?\)/','',$title);
+        $title = preg_replace('/^.*?\:/','',$title);
+        $wiki = $wpdb->get_var('SELECT `p`.`id` FROM `' . $wpdb->posts . '` `p` WHERE `p`.`post_type` = "wiki" AND `p`.`post_name` = "' . preg_replace('/[ -]+/', '-', $href) .'"');
+
+        if(!$wiki)
 			$redlink = 'style="color:red"';
-		else
+        else
 			$redlink = false;
-		
-		if ($this->reference_wiki) {
-			$href = $this->reference_wiki.($namespace?$namespace.':':'').$this->wiki_link($href);
-		} else {
+
+        if ($this->reference_wiki) {
+			$href = $this->reference_wiki.$this->wiki_link($href,$namespace);
+        } else {
 			$nolink = true;
-		}
+        }
 
 		if ($nolink) return $title;
 		
