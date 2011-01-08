@@ -152,6 +152,17 @@ if ( ! get_role('wiki_editor') ) {
     add_role('wiki_editor', 'Wiki Editor', $role_capabilities);
 }
 
+function wpw_get_author($post) {
+	$tmp = get_userdata($post->post_author);
+	
+	if ($tmp->ID > 0):
+		return $tmp->display_name;
+	else:
+		$anon_meta = get_post_meta($post->ID, '_wpw_anon_meta', true);
+		return 'anonymous ('.$anon_meta['ip'].', '.$anon_meta['hostname'].')';
+	endif;
+}
+
 function wiki_post_revisions() {
 	global $post, $current_user, $role;
 	if(wiki_back_compat('front_end_check')) {
@@ -160,7 +171,11 @@ function wiki_post_revisions() {
 	
 	//Most recent revision
 	$date = date(__('m/d/y g:i a'), mktime($post->post_modified));
-	$latest_revision = sprintf(__('Latest revision (@ %1s by %2s)'), $post->post_modified, get_userdata($post->post_author)->display_name);
+	
+	$author = wpw_get_author($post);
+	
+	$latest_revision = sprintf(__('Latest revision (@ %1s by %2s)'), $post->post_modified, $author);
+	
 	$output = '<a href="'.get_permalink($post->ID).'">'.$latest_revision.'</a><br />';
 	
 	//If we have revisions...
@@ -168,9 +183,11 @@ function wiki_post_revisions() {
 		//Loop through them!
 		foreach ($revisions as $revision) {
 			if( @wp_get_post_autosave($post->ID)->ID != $revision->ID) {
-				$author = get_userdata($revision->post_author);
+				
+				$author = wpw_get_author($revision);
+				
 				$date = date(__('m/d/y g:i a'), mktime($revision->post_modified) );
-				$revision_title = sprintf(__('Revision @ %1s by %2s'), $date, $author->display_name);
+				$revision_title = sprintf(__('Revision @ %1s by %2s'), $date, $author);
 				$output.= '<a href="'.get_permalink($post->ID).'?revision='.$revision->ID.'">'.$revision_title.'</a><br />';
 			}
 		}
@@ -778,9 +795,23 @@ function wpw_save_post() {
 				$n_post['post_content'] .='[swrmeta dob="'.$dob.'" loc="'.$loc.'" state="'.$state.'" sum_content="'.htmlspecialchars($sum_content).'" lnk1="'.$lnk1.'" lnk2="'.$lnk2.'" lnk3="'.$lnk3.'"]';
 			}
 			*/
+			if (!is_user_logged_in())
+				$n_post['post_author'] = 0;
+
 			$n_post['ID'] = $wpw_id;
 		// Insert the post into the database
-			return wp_update_post( $n_post );
+			$n_id = wp_update_post( $n_post );
+			
+			if (!is_user_logged_in()):
+				$wpw_anon_meta = array(
+					'ip' => $_SERVER['REMOTE_ADDR'],
+					'hostname' => $_SERVER['REMOTE_HOST']
+				);
+				
+				add_post_meta($n_id, '_wpw_anon_meta', $wpw_anon_meta);
+			endif;
+			
+			return $n_id;
 		/*
 		} else {
 			$n_post = array();
@@ -913,7 +944,29 @@ function curPageURL() {
  return $pageURL;
 }
 
-function wpw_page_caps() {
+function wpw_anon_meta($atts) {
+	global $post;
 	
+	extract(shortcode_atts(array(
+		'ip' => '',
+		'hostname' => '',
+	), $atts));
+
+	$post->anon_ip = $ip;
+	$post->anon_hostname = $hostname;
 }
+
+add_action('_wp_put_post_revision','wpw_anon_meta_save_as_revision', 10);
+
+function wpw_anon_meta_save_as_revision($revision_id) {
+	
+	$old_meta = get_post_meta(wp_is_post_revision($revision_id), '_wpw_anon_meta', true);
+	
+	if(!empty($old_meta)) {
+		add_metadata('post', $revision_id, '_wpw_anon_meta', $old_meta);
+		delete_post_meta(wp_is_post_revision($revision_id), '_wpw_anon_meta', $old_meta);
+	}
+
+}
+
 ?>
