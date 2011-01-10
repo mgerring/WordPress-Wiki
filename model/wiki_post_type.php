@@ -52,10 +52,11 @@ class WikiPostType {
 	}
 	
 	function set_permissions() {
-		global $wp_roles;
+		$wp_roles = new WP_Roles();
 		$all_roles = $wp_roles->get_names();
 		
 		foreach ($all_roles as $role => $name) {
+			
 			$role_object = get_role($role);
 			foreach ($this->permissions as $cap => $grant) {
 				if ($cap == 'publish_wiki_pages' && $role == 'wiki_editor')

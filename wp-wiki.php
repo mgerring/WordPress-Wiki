@@ -19,7 +19,7 @@ add_action('init', 'wiki_enqueue_scripts', 9);
 add_action('init', 'wiki_add_feed', 11);
 
 //Post Types
-if(function_exists('register_post_type') && $GLOBALS['wp_version'] >= 3.0)
+
 	add_action('init','register_wiki_post_type');
 
 // Hoook into the 'wp_dashboard_setup' action to register our other functions
@@ -94,89 +94,16 @@ function wiki_back_compat($switch,$input = null) {
 	return false;
 }
 
-//OLD!
-/*
-function register_wiki_post_type() {
-
-	$labels = array(
-		'name' => _x('Wiki Pages', 'wiki general name'),
-		'singular_name' => _x('Wiki Page', 'wiki singular name'),
-		'add_new' => _x('Add New', 'Wiki Page'),
-		'add_new_item' => __('Add New Wiki Page'),
-		'edit_item' => __('Edit Wiki Page'),
-		'new_item' => __('New Wiki Page'),
-		'view_item' => __('View Wiki Page'),
-		'search_items' => __('Search Wiki Pages'),
-		'not_found' =>  __('No Wiki Pages found'),
-		'not_found_in_trash' => __('No Wiki Pages found in Trash'), 
-		'parent_item_colon' => ''
-	  );
-	
-	register_post_type('wiki',array(
-		'label'=> 'Wiki Page',
-		'labels'=>$labels,
-		'description'=>'Wiki-enabled page. Users with permission can edit this page.',
-		'public'=>true,
-		'capability_type'=>'wiki_page',
-		'supports' => array('title','editor','author','thumbnail','excerpt','comments','revisions','custom-fields','page-attributes'),
-		'hierarchical' => true,
-		'rewrite' => array('slug' => 'wiki', 'with_front' => FALSE)
-	));
-	
-	global $wp_roles;
-	
-	$all_roles = $wp_roles->get_names();
-
-	$wiki_caps = array(
-		'edit_wiki'=>true,
-		'edit_wiki_page'=>true,
-		'edit_wiki_pages'=>true,
-		'edit_others_wiki_pages'=>true,
-		'publish_wiki_pages'=>true,
-		'delete_wiki_page'=>true,
-		'delete_others_wiki_pages'=>false
-	);
-	
-	foreach ($all_roles as $role => $name) {
-		$role_object = get_role($role);
-		foreach ($wiki_caps as $cap => $grant) {
-			if ($cap == 'publish_wiki_pages' && $role == 'wiki_editor')
-				continue;
-			else
-				$role_object->add_cap($cap);
-		}
-	}
-}
-
-if ( ! get_role('wiki_editor') ) {
-	$role_capabilities = array(
-		'read'=>true
-	);
-    add_role('wiki_editor', 'Wiki Editor', $role_capabilities);
-}
-*/
 //NEW!
-include('model/wiki_post_type.php');
 
-$WikiPostType = new WikiPostType();
-
-add_action('init', array($WikiPostType,'register') );
-add_action('init', array($WikiPostType,'set_permissions') );
-
+if(function_exists('register_post_type') && $GLOBALS['wp_version'] >= 3.0):
+	include('model/wiki_post_type.php');
+	$WikiPostType = new WikiPostType();
+	add_action('init', array($WikiPostType,'register') );
+	add_action('init', array($WikiPostType,'set_permissions') );
+endif;
 
 /*
-register_post_type('wiki', array(
-			'label'=> 'Wiki Page',
-			//'labels'=>$this->labels,
-			'description'=>_x('Wiki-enabled page. Users with permission can edit this page.'),
-			'public'=>true,
-			'capability_type'=>'wiki_page',
-			'supports' => array('title','editor','author','thumbnail','excerpt','comments','revisions','custom-fields','page-attributes'),
-			'hierarchical' => true,
-			'rewrite' => array('slug' => 'wiki', 'with_front' => FALSE)
-));
-*/
-
 function wpw_get_author($post) {
 	$tmp = get_userdata($post->post_author);
 	
@@ -222,20 +149,10 @@ function wiki_post_revisions() {
 }
 
 
-//Not sure what this is for...
-/*
-function wiki_exclude_pages_filter($excludes) {
-	global $wpdb;
-	// get the list of excluded pages and merge them with the current list
-	$excludes = array_merge((array)$excludes, (array)$wpdb->get_col("SELECT DISTINCT `post_id` FROM `".$wpdb->postmeta."` WHERE `meta_key` IN ( 'wiki_page' ) AND `meta_value` IN ( '1' )"));
-	return $excludes;
-}
-*/
-
 function wpw_table_of_contents($content) {
-	/**
-	* 	This creates the Table of Contents
-	*/
+
+	//This creates the Table of Contents
+
 	global $wpdb,$post;
 	$wpw_options = get_option('wpw_options');
 	(get_post_meta($post->ID, '_wiki_page_toc', true) == 1) ? $toc = true : $toc = false;
@@ -258,9 +175,8 @@ function wpw_table_of_contents($content) {
 	$content = str_replace("\n", "::newline::", $content);
 	preg_match_all("|</h2>(.*)<h2>|U", $content, $h3s_contents, PREG_PATTERN_ORDER);
 	
-	/**
-	* 	The following lines are really ugly for finding <h3> after the last </h2> please tidy it up if u know a better solution, and please let us know about it.
-	*/
+	//The following lines are really ugly for finding <h3> after the last </h2> please tidy it up if u know a better solution, and please let us know about it.
+
 	$last_h2_pos = explode('</h2>', $content);
 	$last_h2_pos = array_pop($last_h2_pos);
 	$last_h2_pos[1] = $last_h2_pos;
@@ -286,21 +202,18 @@ function wpw_table_of_contents($content) {
 	return "<div class='contents alignright'><h3>".__('Contents')."</h3><p> &#91; <a class='show' onclick='toggle_hide_show(this)'>".__('hide')."</a> &#93; </p>$table</div>".$content;
 }
 
-function wp_wiki_head() {
-	/**
-	* 	Include CSS
-	*/
 
+function wp_wiki_head() {
+	//Include CSS
     echo "<link href='". PLUGIN_URL ."/".WPWIKI_DIR_NAME."/style.css' rel='stylesheet' type='text/css' />";
 }
 
-/**
- * Enqueue Scripts
- */
+	//Enqueue Scripts
 function wiki_enqueue_scripts() {
    wp_enqueue_script("jquery");
    wp_enqueue_script('wordpress-wiki', PLUGIN_URL ."/".WPWIKI_DIR_NAME."/wordpress-wiki.js");
 }
+*/
 
 //Feed Functions
 
@@ -357,7 +270,7 @@ function wiki_create_feed() {
 >
 
 <channel>
-	<title><?php print(__('Recently modifiyed wiki pages for : ')); bloginfo_rss('name'); ?></title>
+	<title><?php print(__('Recently modified wiki pages for : ')); bloginfo_rss('name'); ?></title>
 	<link><?php bloginfo_rss('url') ?></link>
 	<description><?php bloginfo_rss("description") ?></description>
 	<pubDate><?php echo mysql2date('D, d M Y H:i:s +0000', get_lastpostmodified('GMT'), false); ?></pubDate>
@@ -435,14 +348,6 @@ function getAllAdmins(){
 		}
 	}
 	return $emails;
-}
-
-/**
- * Template tag which can be added in the 404 page
- */
-function wiki_404() {
-    $not_found = str_replace("/", "", $_SERVER['REQUEST_URI']);
-    echo "<p>" . __("Sorry, the page with title ") . $not_found . __(" is not created yet. Click") . '<a href="' . get_bloginfo('wpurl') . '/wp-admin/post-new.php">' . __("here") . '</a>' . __(" to create a new page with that title.") . "</p";
 }
 
 
