@@ -8,8 +8,9 @@ Author: Instinct Entertainment/Matthew Gerring
 Author URI: http://www.instinct.co.nz
 /* Major version for "major" releases */
 
+/*
 add_filter('user_has_cap', 'wiki_page_cap', 100, 3);// this filter must be applied after Role Scoper's because we're changing the cap
-
+*/
 //add css
 add_action('wp_head', 'wp_wiki_head');
 add_action('init', 'wiki_enqueue_scripts', 9);
@@ -93,6 +94,8 @@ function wiki_back_compat($switch,$input = null) {
 	return false;
 }
 
+//OLD!
+/*
 function register_wiki_post_type() {
 
 	$labels = array(
@@ -151,6 +154,24 @@ if ( ! get_role('wiki_editor') ) {
 	);
     add_role('wiki_editor', 'Wiki Editor', $role_capabilities);
 }
+*/
+//NEW!
+include('model/wiki_post_type.php');
+
+$WikiPostType = new WikiPostType();
+
+/*
+register_post_type('wiki', array(
+			'label'=> 'Wiki Page',
+			//'labels'=>$this->labels,
+			'description'=>_x('Wiki-enabled page. Users with permission can edit this page.'),
+			'public'=>true,
+			'capability_type'=>'wiki_page',
+			'supports' => array('title','editor','author','thumbnail','excerpt','comments','revisions','custom-fields','page-attributes'),
+			'hierarchical' => true,
+			'rewrite' => array('slug' => 'wiki', 'with_front' => FALSE)
+));
+*/
 
 function wpw_get_author($post) {
 	$tmp = get_userdata($post->post_author);
