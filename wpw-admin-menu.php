@@ -234,11 +234,13 @@ function wpw_replace_current_with_pending($id) {
 	}
 	
 	if(wiki_back_compat('check_no_post',$id)) {
-		if(isset($_POST['wpw_toc']) && $_POST['wpw_toc'] == "true" )
-			update_post_meta($id, '_wiki_page_toc', 1);
-		else
-			delete_post_meta($id, '_wiki_page_toc');
-		
+		if(isset( $_POST['wpw_toc']) ):
+			if ($_POST['wpw_toc'] == "true" )
+				update_post_meta($id, '_wiki_page_toc', 1);
+			else
+				delete_post_meta($id, '_wiki_page_toc');
+		endif;
+			
 		if(isset($_POST['wpw_approve_revision']) && $_POST['wpw_approve_revision'] == "true" ) {
 			$_POST['wpw_approve_revision'] = null; //Prevent recursion!
 			$revision = get_post($id);

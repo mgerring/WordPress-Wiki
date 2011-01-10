@@ -583,6 +583,7 @@ function wpw_invoke_editor() {
 		$wpw_options = get_option('wpw_options');
 		//if ( current_user_can('edit_wiki') ) {
 			remove_filter('the_content', 'wpautop');
+			remove_filter('the_content', 'wptexturize');
 			add_filter('the_content','wpw_substitute_in_revision_content',11);
 			add_filter('the_content','wpw_wiki_interface',12);
 			add_action('wp_footer','wpw_inline_editor');
@@ -621,12 +622,12 @@ function wpw_substitute_in_revision_content($content) {
 	}
 }
 
-function wpw_wiki_parser($content, $title) {
+function wpw_wiki_parser($content) {
 	global $post;
 	$wiki_parser = new WPW_WikiParser();
 	$wiki_parser->reference_wiki = get_bloginfo('url').'/wiki/';
 	$wiki_parser->suppress_linebreaks = true;	
-	$content = $wiki_parser->parse($content, $title);
+	$content = $wiki_parser->parse($content, $post->post_title);
 	$content = wpautop($content);	
 	return $content;
 	unset($wiki_parser);
@@ -634,7 +635,7 @@ function wpw_wiki_parser($content, $title) {
 
 function wpw_get_content($content, $class = null ){
 	global $post;
-	return '<div id="wpw_read_div" '.$class.'>'.wpw_table_of_contents( wpw_wiki_parser( $content,$post->post_title ) ).'</div>';	
+	return '<div id="wpw_read_div" '.$class.'>'.wpw_table_of_contents( wptexturize( wpw_wiki_parser($content) ) ).'</div>';	
 }
 
 function wpw_get_edit($content, $class = null ){
@@ -756,8 +757,23 @@ function wpw_inline_editor() {
 	';
 }
 
-function wpw_save_code($match) {
+add_filter('wp_insert_post_data','wpw_save_code', '99');
+
+function wpw_save_code($data,$postarr = Array()) {	
+	$regex = '/(?<=^code>|pre>|%%%).+?(?=<\/$1$>)/sm';
+	$data['post_content'] = preg_replace_callback($regex, 'wpw_nowiki',  $data['post_content']);
+	return $data;
+}
+
+function wpw_nowiki($match) {
 	return '<nowiki>'.htmlentities($match).'</nowiki>';
+}
+
+add_action('publish_wiki','wpw_set_toc');
+
+function wpw_set_toc($post_id) {
+	if (wiki_back_compat('check_no_post',$post_id))
+		update_post_meta($post_id,'_wiki_page_toc',1);
 }
 
 function wpw_save_post() {
@@ -766,8 +782,7 @@ function wpw_save_post() {
 			extract($_POST);
 		}
 		//First, save everything marked as code
-		$regex = '/(?<=^code>|pre>|%%%).+?(?=<\/$1$>)/sm';
-		$wpw_editor_content = preg_replace_callback($regex, 'wpw_save_code',  $wpw_editor_content);
+		
 		/*
 		//Checks to see if changes in the draft page are being committed to the parent page.
 		if ($commit == 1) {
@@ -789,7 +804,7 @@ function wpw_save_post() {
 		$n_post = array();
 		//if (!isset($wpw_revision_stack)) {
 			
-			$n_post['post_content'] = apply_filters('wp_insert_post_data',$wpw_editor_content);
+			$n_post['post_content'] = $wpw_editor_content;
 			/*
 			if ($commit != 1) {
 				$n_post['post_content'] .='[swrmeta dob="'.$dob.'" loc="'.$loc.'" state="'.$state.'" sum_content="'.htmlspecialchars($sum_content).'" lnk1="'.$lnk1.'" lnk2="'.$lnk2.'" lnk3="'.$lnk3.'"]';
