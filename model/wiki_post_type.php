@@ -48,13 +48,14 @@ class WikiPostType {
 	}
 		
 	function register() {
-		//register_post_type('wiki', $this->post_type_options);
+		register_post_type('wiki', $this->post_type_options);
 	}
 	
 	function set_permissions() {
 		global $wp_roles;
-
-		foreach ($wp_roles->get_names() as $role => $name) {
+		$all_roles = $wp_roles->get_names();
+		
+		foreach ($all_roles as $role => $name) {
 			$role_object = get_role($role);
 			foreach ($this->permissions as $cap => $grant) {
 				if ($cap == 'publish_wiki_pages' && $role == 'wiki_editor')
@@ -63,6 +64,7 @@ class WikiPostType {
 					$role_object->add_cap($cap);
 			}
 		}
+		
 	}
 
 }

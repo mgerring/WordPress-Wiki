@@ -160,6 +160,10 @@ include('model/wiki_post_type.php');
 
 $WikiPostType = new WikiPostType();
 
+add_action('init', array($WikiPostType,'register') );
+add_action('init', array($WikiPostType,'set_permissions') );
+
+
 /*
 register_post_type('wiki', array(
 			'label'=> 'Wiki Page',
