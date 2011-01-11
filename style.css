@@ -55,3 +55,22 @@ div.contents a.hide, div.contents a.show {
 	font-size: 85%;
   display: inline;
 }
+#wpw_tab_nav {
+	list-style-type:none;
+	text-align:right;
+	width:100%;
+}
+#wpw_tab_nav li {
+	display:inline;
+	margin-left:10px;
+}
+#wpw_tab_nav li a {
+	text-decoration:none;
+}
+#wpw_tab_nav li.ui-tabs-selected {
+	font-weight:bold;
+	border-bottom:1px dotted #000;
+}
+.ui-tabs .ui-tabs-hide, .wpw-hide-it {
+		display: none!important;
+}

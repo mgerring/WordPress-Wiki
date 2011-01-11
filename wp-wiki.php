@@ -11,9 +11,9 @@ Author URI: http://www.instinct.co.nz
 /*
 add_filter('user_has_cap', 'wiki_page_cap', 100, 3);// this filter must be applied after Role Scoper's because we're changing the cap
 */
-//add css
-add_action('wp_head', 'wp_wiki_head');
-add_action('init', 'wiki_enqueue_scripts', 9);
+
+global $wp_version;
+
 
 // Feeds
 add_action('init', 'wiki_add_feed', 11);
@@ -34,6 +34,8 @@ include('wpw-admin-menu.php');
 //include the class up here so it doesn't get re-declared- fixes issue #4 on GitHub. Thanks Nexiom!
 include('lib/WPW_WikiParser.php');
 
+include('controllers/wiki_pages.php');
+
 /**
 * Guess the wp-content and plugin urls/paths
 */
@@ -50,58 +52,44 @@ if (!defined('PLUGIN_PATH'))
 define('WPWIKI_FILE_PATH', dirname(__FILE__));
 define('WPWIKI_DIR_NAME', basename(WPWIKI_FILE_PATH));
 
-//This checks if we're working with a wiki page, rather than running two seperate checks for backwards compatibility
+$WikiHelper = new WikiHelper();
+$WikiPageController = new WikiPageController();
 
-function wiki_back_compat($switch,$input = null) {
-	global $wp_version, $post;
-	if ($switch == 'front_end_check') {
-		if ($wp_version < 3.0) {
-			if (get_post_meta($post->ID,'_wiki_page',true) == 1)
-				return true;
-			else
-				return false;
-		} else {
-			if ($post->post_type == 'wiki')
-				return true;
-			else
-				return false;
-		}
-	} elseif ($switch == 'check_no_post') {
-		if ($wp_version < 3.0) {
-			if (get_post_meta($input,'_wiki_page',true) == 1)
-				return true;
-			else
-				return false;
-		} else {
-			$post_to_check = get_post($input);
-			if ($post_to_check->post_type == 'wiki')
-				return true;
-			else
-				return false;
-		}
-	} elseif ($switch == 'check_post_parent') {
-		
-		$post = get_post($input);
-		
-		if ($post->post_parent != 0)
-			return false;
-		else
-			return false;
-		
-	} else {
-		return false;
-	}
-	return false;
-}
+//This checks if we're working with a wiki page, rather than running two seperate checks for backwards compatibility
 
 //NEW!
 
-if(function_exists('register_post_type') && $GLOBALS['wp_version'] >= 3.0):
+//Version-specific actions and filters
+
+if ($wp_version >= 3.0):
+	//Include the Wiki custom post type
 	include('model/wiki_post_type.php');
 	$WikiPostType = new WikiPostType();
+	
+	//Register the post type
 	add_action('init', array($WikiPostType,'register') );
+	
+	//Set permissions
 	add_action('init', array($WikiPostType,'set_permissions') );
+	
+	//Make Table of Contents on by default for Wiki post type
+	add_action('publish_wiki',array($WikiPageController,'wpw_set_toc'));
+	
+	//Make Table of Contents on by default for pages marked as Wikis
+	add_action('publish_page',array($WikiPageController,'wpw_set_toc'));
+else:
+	//Make Table of Contents on by default for pages marked as Wikis
+	add_action('publish_page',array($WikiPageController,'wpw_set_toc'));
 endif;
+
+//Front-end editor
+add_action('wp',array($WikiPageController, 'set_query'));
+add_action('get_header',array($WikiPageController, 'invoke_editor'));
+
+//Ajax functions
+add_action('wp_ajax_ajax_save',array($WikiPageController,'ajax_save');
+add_action('wp_ajax_nopriv_ajax_save',array($WikiPageController,'ajax_save');
+
 
 /*
 function wpw_get_author($post) {
@@ -459,7 +447,7 @@ function cron_email() {
         update_option('wpw_options', serialize($wpw_options));
     }
 }
-
+/*
 add_action('wp','wpw_set_query');
 
 function wpw_set_query() {
@@ -730,7 +718,7 @@ function wpw_save_post() {
 			$pid = $draft_id;
 			}
 		}
-		*/
+		*//*
 		$n_post = array();
 		//if (!isset($wpw_revision_stack)) {
 			
@@ -739,7 +727,7 @@ function wpw_save_post() {
 			if ($commit != 1) {
 				$n_post['post_content'] .='[swrmeta dob="'.$dob.'" loc="'.$loc.'" state="'.$state.'" sum_content="'.htmlspecialchars($sum_content).'" lnk1="'.$lnk1.'" lnk2="'.$lnk2.'" lnk3="'.$lnk3.'"]';
 			}
-			*/
+			*//*
 			if (!is_user_logged_in())
 				$n_post['post_author'] = 0;
 
@@ -779,7 +767,7 @@ function wpw_save_post() {
 			update_post_meta($pid, $value, strip_tags($$value), FALSE);
 		}
 		update_post_meta($pid, 'sum_content',htmlspecialchars_decode($sum_content));
-		*/
+		*//*
 	} else {
 		//This is the error message that displays if a user has no credentials to edit pages.
 		die(__('You don\'t have permission to do that.'));
@@ -798,7 +786,7 @@ function wpw_no_js_save() {
 		endif;
 	endif;
 }
-
+*/
 
 //Code shamelessly stolen from here: http://www.blogseye.com/2010/05/creating-fake-wordpress-posts-on-the-fly/comment-page-1/#comment-253
 function wpw_fake_page() {
