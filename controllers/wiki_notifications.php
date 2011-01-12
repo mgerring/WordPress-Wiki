@@ -1,5 +1,13 @@
 <?php
 class WikiNotifications {
+	function __construct() {
+		$this->WikiNotifications();
+	}
+	
+	function WikiNotifications() {
+		if (!wp_next_scheduled('cron_email_hook'))
+	    	wp_schedule_event( time(), 'weekly', 'cron_email_hook' );
+	}
 	/**
 	 * wiki_page_edit_notification 
 	 * @global <type> $wpdb
@@ -56,12 +64,6 @@ class WikiNotifications {
 	        'weekly' => array('interval' => 604800, 'display' => 'Once Weekly'),
 	        'fortnightly' => array('interval' => 1209600, 'display' => 'Once Fortnightly'),
 	    );
-	}
-	
-	add_filter('cron_schedules', 'more_reccurences');
-	
-	if (!wp_next_scheduled('cron_email_hook')) {
-	    wp_schedule_event( time(), 'weekly', 'cron_email_hook' );
 	}
 	
 	function cron_email() {

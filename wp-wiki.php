@@ -20,9 +20,11 @@ include('wpw-admin-menu.php');
 include('lib/WPW_WikiParser.php');
 
 //include component controllers
+include('model/wiki_post_type.php');
 include('controllers/wiki_pages.php');
 include('controllers/wiki_notifications.php');
 include('controllers/wiki_feed.php');
+include('wiki_helpers.php');
 
 /**
 * Guess the wp-content and plugin urls/paths
@@ -40,8 +42,10 @@ if (!defined('PLUGIN_PATH'))
 define('WPWIKI_FILE_PATH', dirname(__FILE__));
 define('WPWIKI_DIR_NAME', basename(WPWIKI_FILE_PATH));
 
-include('wiki_helpers.php');
+//Enables Wiki Pages
+$WikiPostType = new WikiPostType();
 
+//Create classes for our components. This will be changed to allow 
 $WikiPageController = new WikiPageController();
 $WikiNotifications = new WikiNotifications();
 $WikiFeed = new WikiFeed();
@@ -53,10 +57,6 @@ $WikiFeed = new WikiFeed();
 //Version-specific actions and filters
 
 if ($wp_version >= 3.0):
-	//Include the Wiki custom post type
-	include('model/wiki_post_type.php');
-	$WikiPostType = new WikiPostType();
-	
 	//Register the post type
 	add_action('init', array($WikiPostType,'register') );
 	
@@ -64,13 +64,13 @@ if ($wp_version >= 3.0):
 	add_action('init', array($WikiPostType,'set_permissions') );
 	
 	//Make Table of Contents on by default for Wiki post type
-	add_action('publish_wiki',array($WikiPageController,'wpw_set_toc'));
+	add_action('publish_wiki',array($WikiPageController,'set_toc'));
 	
 	//Make Table of Contents on by default for pages marked as Wikis
-	add_action('publish_page',array($WikiPageController,'wpw_set_toc'));
+	add_action('publish_page',array($WikiPageController,'set_toc'));
 else:
 	//Make Table of Contents on by default for pages marked as Wikis
-	add_action('publish_page',array($WikiPageController,'wpw_set_toc'));
+	add_action('publish_page',array($WikiPageController,'set_toc'));
 	//Manage permissions for versions prior to 3.0
 	add_filter('user_has_cap', array($WikiPostType, 'page_cap'), 100, 3);
 endif;
@@ -80,6 +80,7 @@ add_action('wp', array($WikiPageController, 'set_query'));
 add_action('template_redirect', array($WikiPageController, 'invoke_editor'));
 add_action('init', array($WikiPageController, 'create_new_and_redirect'));
 add_action('wp', array($WikiPageController, 'fake_page'));
+add_action('_wp_put_post_revision', array($WikiPageController,'anon_meta_save_as_revision'), 10);
 
 //Ajax functions
 add_action('wp_ajax_ajax_save',array($WikiPageController,'ajax_save'));
@@ -92,8 +93,10 @@ if( !defined('DOING_AJAX') && isset($_POST['wpw_editor_content']) )
 //Notifications
 add_action('save_post', array($WikiNotifications,'page_edit_notification'));
 add_action('cron_email_hook', array($WikiNotifications,'cron_email'));
+add_filter('cron_schedules', array($WikiNotifications,'more_reccurences'));
 
 //Feed
 add_action('init', array($WikiFeed, 'add_feed'), 11);
 
+//That's all she wrote!
 ?>

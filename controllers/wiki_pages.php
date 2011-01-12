@@ -6,7 +6,7 @@ class WikiPageController {
 	} 
 	
 	function WikiPageController() {
-		add_filter('wp_insert_post_data','wpw_save_code', '99');
+		add_filter('wp_insert_post_data',array($this,'save_code'), '99');
 		$this->WikiHelper = new WikiHelpers();
 	}
 	
@@ -352,7 +352,7 @@ class WikiPageController {
 				if ($commit != 1) {
 					$n_post['post_content'] .='[swrmeta dob="'.$dob.'" loc="'.$loc.'" state="'.$state.'" sum_content="'.htmlspecialchars($sum_content).'" lnk1="'.$lnk1.'" lnk2="'.$lnk2.'" lnk3="'.$lnk3.'"]';
 				}
-				*//*
+				*/
 				if (!is_user_logged_in())
 					$n_post['post_author'] = 0;
 	
@@ -400,13 +400,13 @@ class WikiPageController {
 	}
 	
 	function ajax_save() {
-		if (wpw_save_post())
+		if ($this->save_post())
 			die('Post saved!');
 	}
 	
 	function no_js_save() {
 		if ( isset( $_POST['wpw_editor_content'] ) && wp_verify_nonce( $_POST['_wpnonce'], 'wpw_edit_form' ) ):
-			if ( wpw_save_post() ):
+			if ( $this->save_post() ):
 				$post->wpw_post_saved = true;
 			endif;
 		endif;
@@ -493,16 +493,6 @@ class WikiPageController {
 	    }
 	}
 	
-	function wpw_show_me() {
-		global $wp_query, $post;
-		echo '<pre>Query';
-		var_dump($wp_query);
-		echo '</pre>';
-		echo '<pre>Post';
-		var_dump($post);
-		echo '</pre>';
-	}
-	
 	function curPageURL() {
 	 $pageURL = 'http';
 	 if ($_SERVER["HTTPS"] == "on") {$pageURL .= "s";}
@@ -515,9 +505,7 @@ class WikiPageController {
 	 return $pageURL;
 	}
 	
-	add_action('_wp_put_post_revision','wpw_anon_meta_save_as_revision', 10);
-	
-	function wpw_anon_meta_save_as_revision($revision_id) {
+	function anon_meta_save_as_revision($revision_id) {
 		
 		$old_meta = get_post_meta(wp_is_post_revision($revision_id), '_wpw_anon_meta', true);
 		

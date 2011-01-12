@@ -4,7 +4,7 @@ class WikiFeed {
 	 * Add new feed to WordPress
 	 * @global <type> $wp_rewrite
 	 */
-	function add_feed(  ) {
+	function add_feed() {
 	    if (function_exists('load_plugin_textdomain')) {
 	        $plugin_dir = basename(dirname(__FILE__));
 	        load_plugin_textdomain('wordpress_wiki', '', $plugin_dir);
@@ -12,7 +12,7 @@ class WikiFeed {
 	
 	    global $wp_rewrite;
 	    add_feed('wiki', array($this,'create_feed'));
-	    add_action('generate_rewrite_rules', array($this,'rewrite_rules');
+	    add_action('generate_rewrite_rules', array($this,'feed_rewrite_rules'));
 	    $wp_rewrite->flush_rules();
 	}
 	
@@ -64,7 +64,7 @@ class WikiFeed {
 				foreach ($posts as $post) {
 					$content = '
 	                            <p>'.__('wiki URL: ').'<a href="'. get_permalink($post->ID).'">'.$post->post_title.'</a></p>
-	                    <p>'.__('Modifiyed By: ').'<a href="'. get_author_posts_url($post->post_author).'">'. get_author_name($post->post_author).'</a></p>
+	                    <p>'.__('Modified By: ').'<a href="'. get_author_posts_url($post->post_author).'">'. get_author_name($post->post_author).'</a></p>
 					';
 	?>
 		<item>
