@@ -14,7 +14,7 @@ class WikiPostType {
 		$this->labels = array(
 			'name' => _x('Wiki Pages', 'wiki general name'),
 			'singular_name' => _x('Wiki Page', 'wiki singular name'),
-			'add_new' => _x('Add New'),
+			'add_new' => __('Add New'),
 			'add_new_item' => __('Add New Wiki Page'),
 			'edit_item' => __('Edit Wiki Page'),
 			'new_item' => __('New Wiki Page'),
@@ -38,7 +38,7 @@ class WikiPostType {
 		$this->post_type_options = array(
 			'label'=> 'Wiki Page',
 			'labels'=>$this->labels,
-			'description'=>_x('Wiki-enabled page. Users with permission can edit this page.'),
+			'description'=>__('Wiki-enabled page. Users with permission can edit this page.'),
 			'public'=>true,
 			'capability_type'=>'wiki_page',
 			'supports' => array('title','editor','author','thumbnail','excerpt','comments','revisions','custom-fields','page-attributes'),

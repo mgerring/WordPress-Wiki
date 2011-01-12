@@ -20,7 +20,6 @@ add_action('init', 'wiki_add_feed', 11);
 
 //Post Types
 
-	add_action('init','register_wiki_post_type');
 
 // Hoook into the 'wp_dashboard_setup' action to register our other functions
 //add_action('wp_dashboard_setup', 'wiki_dashboard_widget' );
@@ -33,7 +32,6 @@ add_action('save_post', 'wiki_page_edit_notification');
 include('wpw-admin-menu.php');
 //include the class up here so it doesn't get re-declared- fixes issue #4 on GitHub. Thanks Nexiom!
 include('lib/WPW_WikiParser.php');
-
 include('controllers/wiki_pages.php');
 
 /**
@@ -45,14 +43,15 @@ if ( !defined('WP_CONTENT_DIR') )
     define( 'WP_CONTENT_DIR', ABSPATH . 'wp-content' );
 
 if (!defined('PLUGIN_URL'))
-    define('PLUGIN_URL', WP_CONTENT_URL . '/plugins/');
+    define('PLUGIN_URL', WP_CONTENT_URL . '/plugins');
 if (!defined('PLUGIN_PATH'))
-    define('PLUGIN_PATH', WP_CONTENT_DIR . '/plugins/');
+    define('PLUGIN_PATH', WP_CONTENT_DIR . '/plugins');
 
 define('WPWIKI_FILE_PATH', dirname(__FILE__));
 define('WPWIKI_DIR_NAME', basename(WPWIKI_FILE_PATH));
 
-$WikiHelper = new WikiHelper();
+include('wiki_helpers.php');
+
 $WikiPageController = new WikiPageController();
 
 //This checks if we're working with a wiki page, rather than running two seperate checks for backwards compatibility
@@ -84,12 +83,15 @@ endif;
 
 //Front-end editor
 add_action('wp',array($WikiPageController, 'set_query'));
-add_action('get_header',array($WikiPageController, 'invoke_editor'));
+add_action('template_redirect',array($WikiPageController, 'invoke_editor'));
 
 //Ajax functions
-add_action('wp_ajax_ajax_save',array($WikiPageController,'ajax_save');
-add_action('wp_ajax_nopriv_ajax_save',array($WikiPageController,'ajax_save');
+add_action('wp_ajax_ajax_save',array($WikiPageController,'ajax_save'));
+add_action('wp_ajax_nopriv_ajax_save',array($WikiPageController,'ajax_save'));
 
+//if JavaScript isn't available...
+if( !defined('DOING_AJAX') && isset($_POST['wpw_editor_content']) )
+	add_action('init',array($WikiPageController,'no_js_save'));
 
 /*
 function wpw_get_author($post) {

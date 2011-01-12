@@ -1,8 +1,5 @@
 <?php
 class WikiPageController {
-
-	global $WikiHelper;
-	
 	
 	function __construct() {
 		$this->WikiPageController();
@@ -10,28 +7,26 @@ class WikiPageController {
 	
 	function WikiPageController() {
 		add_filter('wp_insert_post_data','wpw_save_code', '99');
+		$this->WikiHelper = new WikiHelpers();
 	}
+	
+	
 	//actions and filters
 	//add_action('get_header','invoke_editor');
 
 	//add_action('wp_ajax_ajax_save',array($this,'ajax_save');
 	//add_action('wp_ajax_nopriv_ajax_save',array($this,'ajax_save');
 	
-	
-	
-	
-
-	
 	function post_revisions() {
 		global $post, $current_user, $role;
-		if($WikiHelper->is_wiki('front_end_check')) {
+		if($this->WikiHelper->is_wiki('front_end_check')) {
 		$wpw_options = get_option('wpw_options');
 		$revisions = get_posts('post_status=any&post_type=revision&post_parent='.$post->ID.'&numberposts='.$wpw_options['number_of_revisions']);
 		
 		//Most recent revision
 		$date = date(__('m/d/y g:i a'), mktime($post->post_modified));
 		
-		$author = $WikiHelper->get_author($post);
+		$author = $this->WikiHelper->get_author($post);
 		
 		$latest_revision = sprintf(__('Latest revision (@ %1s by %2s)'), $post->post_modified, $author);
 		
@@ -43,7 +38,7 @@ class WikiPageController {
 			foreach ($revisions as $revision) {
 				if( @wp_get_post_autosave($post->ID)->ID != $revision->ID) {
 					
-					$author = $WikiHelper->get_author($revision);
+					$author = $this->WikiHelper->get_author($revision);
 					
 					$date = date(__('m/d/y g:i a'), mktime($revision->post_modified) );
 					$revision_title = sprintf(__('Revision @ %1s by %2s'), $date, $author);
@@ -63,7 +58,7 @@ class WikiPageController {
 		$wpw_options = get_option('wpw_options');
 		(get_post_meta($post->ID, '_wiki_page_toc', true) == 1) ? $toc = true : $toc = false;
 		
-		if (!$WikiHelper->is_wiki('front_end_check')) {
+		if (!$this->WikiHelper->is_wiki('front_end_check')) {
 			return $content;
 		}
 	
@@ -135,22 +130,17 @@ class WikiPageController {
 		}
 	}
 	
-	if( !defined('DOING_AJAX') && isset($_POST['wpw_editor_content']) )
-		add_action('init','wpw_no_js_save');
-	
-	
-	
 	function invoke_editor() {
 		global $post;
-		if ( $WikiHelper->is_wiki('front_end_check') ) {
+		if ( $this->WikiHelper->is_wiki('front_end_check') ) {
 			$wpw_options = get_option('wpw_options');
 			//if ( current_user_can('edit_wiki') ) {
 				remove_filter('the_content', 'wpautop');
 				remove_filter('the_content', 'wptexturize');
-				add_action('wp_head', 'styles');
-				add_action('wp_head', 'scripts', 9);
+				add_action('get_header', array($this,'styles'));
+				add_action('get_header', array($this,'scripts'), 9);
 				add_filter('the_content',array($this, 'substitute_in_revision_content'),11);
-				add_filter('the_content',array($this,'interface'),12);
+				add_filter('the_content',array($this,'front_end_interface'),12);
 				add_action('wp_footer',array($this,'inline_editor'));
 					
 			//} else {
@@ -211,7 +201,7 @@ class WikiPageController {
 	}
 	
 	function get_history($content, $class = null){
-		return '<div id="wpw_view_history_div" '.$class.'>'.wiki_post_revisions().'</div>';
+		return '<div id="wpw_view_history_div" '.$class.'>'.$this->post_revisions().'</div>';
 	}
 	
 	function get_section($content = null, $section, $class) {
@@ -226,7 +216,7 @@ class WikiPageController {
 		endif;
 	}
 	
-	function interface($content) {
+	function front_end_interface($content) {
 		global $post;
 		
 		get_option('wpw_options');
@@ -332,7 +322,7 @@ class WikiPageController {
 	
 	
 	function set_toc($post_id) {
-		if ($WikiHelper->is_wiki('check_no_post',$post_id))
+		if ($this->WikiHelper->is_wiki('check_no_post',$post_id))
 			update_post_meta($post_id,'_wiki_page_toc',1);
 	}
 	
