@@ -10,13 +10,6 @@ class WikiPageController {
 		$this->WikiHelper = new WikiHelpers();
 	}
 	
-	
-	//actions and filters
-	//add_action('get_header','invoke_editor');
-
-	//add_action('wp_ajax_ajax_save',array($this,'ajax_save');
-	//add_action('wp_ajax_nopriv_ajax_save',array($this,'ajax_save');
-	
 	function post_revisions() {
 		global $post, $current_user, $role;
 		if($this->WikiHelper->is_wiki('front_end_check')) {
@@ -418,6 +411,123 @@ class WikiPageController {
 			endif;
 		endif;
 	}
+	
+	//Code shamelessly stolen from here: http://www.blogseye.com/2010/05/creating-fake-wordpress-posts-on-the-fly/comment-page-1/#comment-253
+	function fake_page() {
+		global $wp_query, $post;
+	  	if($wp_query->is_404 && isset($_GET['redlink']) && $_GET['redlink'] == 1 ) {
+	  		$new_title = strip_tags($_GET['title']);
+			$new_page_nonce = wp_create_nonce('wpw_new_page_nonce');
+			$get_params = '?new_wiki_page=true&nonce='.$new_page_nonce.'&title='.$new_title;
+			$new_link = '<a href="'.get_bloginfo('url').'/wiki/new'.$get_params.'">Click here to create it.</a>';
+			$id=-42; // need an id
+			$post = new stdClass();
+				$post->ID= $id;
+				$post->post_category= array('Uncategorized'); //Add some categories. an array()???
+				$post->post_content='A wiki page with the title '.$new_title.' could not be found. '.$new_link; //The full text of the post.
+				$post->post_excerpt= $post->post_content; //For all your post excerpt needs.
+				$post->post_status='publish'; //Set the status of the new post.
+				$post->post_title= 'New Wiki Page'; //The title of your post.
+				$post->post_type='page'; //Sometimes you might want to post a page.
+				$post->comment_status = 'open';
+				$post->post_date = date('Y-m-d H:i:s', time());
+			$wp_query->queried_object=$post;
+			$wp_query->post=$post;
+			$wp_query->found_posts = 1;
+			$wp_query->post_count = 1;
+			$wp_query->max_num_pages = 1;
+			$wp_query->is_single = 1;
+			$wp_query->is_404 = false;
+			$wp_query->is_posts_page = false;
+			$wp_query->posts = array($post);
+			$wp_query->is_page = true;
+			$wp_query->page= 1;
+			//$wp_query->is_post=true;
+			//$wp_query->page=false;
+		}
+	}
+	
+	function create_new_and_redirect() {
+	    //echo 'workin?';
+	    if (isset($_GET['new_wiki_page']) && $_GET['new_wiki_page'] == 'true' && wp_verify_nonce($_GET['nonce'], 'wpw_new_page_nonce')) {
+	
+	    global $wp_version;
+	    global $wpdb;
+	
+	    $new_wiki = array();
+	
+	    $title = strip_tags($_GET['title']);
+	    $pieces = explode(':',$title,2);
+	    if (count($pieces) == 2) {
+	            list($namespace,$topic) = $pieces;
+	            $namespace = strtolower(preg_replace('/[ -]+/', '-', $namespace));
+	            $parent_id = $wpdb->get_var('SELECT id FROM `' . $wpdb->posts . '` WHERE post_name = "' . $namespace .'"');
+	            if ($parent_id)
+	                    $new_wiki['post_parent'] = $parent_id;
+	    }
+	    else {  
+	            $namespace = '';
+	            $topic = $title;
+	    }
+	    $topic = strtolower(preg_replace('/[ -]+/', '-', $topic));
+	    $url = get_option('siteurl') . '/wiki/' . ($namespace ? $namespace.'/' : '') . $topic;
+	
+	    $new_wiki['post_name'] = $topic;
+	    $new_wiki['post_title'] = $title;
+	    $new_wiki['post_content'] = 'Click the "Edit" tab to add content to this page.';
+	    $new_wiki['guid'] = $url;
+	    $new_wiki['post_status'] = 'publish';
+	
+	    if ($wp_version >= 3.0) {
+	            $new_wiki['post_type'] = 'wiki';
+	    }
+	
+	    $new_wiki_id = wp_insert_post($new_wiki);
+	
+	    if($wp_version <= 3.0) {
+	            update_post_meta($new_wiki_id, '_wiki_page', 1);
+	    }
+	
+	    wp_redirect( $url );
+	    exit();
+	    }
+	}
+	
+	function wpw_show_me() {
+		global $wp_query, $post;
+		echo '<pre>Query';
+		var_dump($wp_query);
+		echo '</pre>';
+		echo '<pre>Post';
+		var_dump($post);
+		echo '</pre>';
+	}
+	
+	function curPageURL() {
+	 $pageURL = 'http';
+	 if ($_SERVER["HTTPS"] == "on") {$pageURL .= "s";}
+	 $pageURL .= "://";
+	 if ($_SERVER["SERVER_PORT"] != "80") {
+	  $pageURL .= $_SERVER["SERVER_NAME"].":".$_SERVER["SERVER_PORT"].$_SERVER["REQUEST_URI"];
+	 } else {
+	  $pageURL .= $_SERVER["SERVER_NAME"].$_SERVER["REQUEST_URI"];
+	 }
+	 return $pageURL;
+	}
+	
+	add_action('_wp_put_post_revision','wpw_anon_meta_save_as_revision', 10);
+	
+	function wpw_anon_meta_save_as_revision($revision_id) {
+		
+		$old_meta = get_post_meta(wp_is_post_revision($revision_id), '_wpw_anon_meta', true);
+		
+		if(!empty($old_meta)) {
+			add_metadata('post', $revision_id, '_wpw_anon_meta', $old_meta);
+			delete_post_meta(wp_is_post_revision($revision_id), '_wpw_anon_meta', $old_meta);
+		}
+	
+	}
+
 }
 
 ?>
