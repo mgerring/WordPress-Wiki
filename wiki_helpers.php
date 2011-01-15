@@ -52,6 +52,5 @@ class WikiHelpers {
 		}
 		return false;
 	}
-
 }
 ?>

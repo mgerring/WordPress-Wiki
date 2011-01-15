@@ -6,16 +6,12 @@ Description: Add Wiki functionality to your wordpress site.
 Version: 0.9RC1
 Author: Instinct Entertainment/Matthew Gerring
 Author URI: http://www.instinct.co.nz
-/* Major version for "major" releases */
-
-/*
-// this filter must be applied after Role Scoper's because we're changing the cap
 */
 
 global $wp_version;
 
 //include the admin page
-include('wpw-admin-menu.php');
+//include('wpw-admin-menu.php');
 //include the class up here so it doesn't get re-declared- fixes issue #4 on GitHub. Thanks Nexiom!
 include('lib/WPW_WikiParser.php');
 
@@ -24,6 +20,7 @@ include('model/wiki_post_type.php');
 include('controllers/wiki_pages.php');
 include('controllers/wiki_notifications.php');
 include('controllers/wiki_feed.php');
+include('controllers/wiki_admin.php');
 include('wiki_helpers.php');
 
 /**
@@ -49,6 +46,7 @@ $WikiPostType = new WikiPostType();
 $WikiPageController = new WikiPageController();
 $WikiNotifications = new WikiNotifications();
 $WikiFeed = new WikiFeed();
+$WikiAdmin = new WikiAdmin();
 
 //This checks if we're working with a wiki page, rather than running two seperate checks for backwards compatibility
 
@@ -97,6 +95,11 @@ add_filter('cron_schedules', array($WikiNotifications,'more_reccurences'));
 
 //Feed
 add_action('init', array($WikiFeed, 'add_feed'), 11);
+
+//Admin pages
+add_action('admin_menu', array($WikiAdmin,'register_options_page'));
+add_action('save_post',array($WikiAdmin,'replace_current_with_pending'));
+add_action('admin_menu', array($WikiAdmin,'add_custom_box'));
 
 //That's all she wrote!
 ?>

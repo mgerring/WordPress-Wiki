@@ -98,12 +98,12 @@ class WikiPageController {
 	
 	
 	function styles() {
-		wp_enqueue_style('wordpress-wiki', PLUGIN_URL ."/".WPWIKI_DIR_NAME."/style.css");
+		wp_enqueue_style('wordpress-wiki', PLUGIN_URL ."/".WPWIKI_DIR_NAME."/static/style.css");
 	}
 	
 	function scripts() {
 	   wp_enqueue_script("jquery");
-	   wp_enqueue_script('wordpress-wiki', PLUGIN_URL ."/".WPWIKI_DIR_NAME."/wordpress-wiki.js");
+	   wp_enqueue_script('wordpress-wiki', PLUGIN_URL ."/".WPWIKI_DIR_NAME."/static/wordpress-wiki.js");
 	   wp_enqueue_script('jquery-ui-tabs');
 	}
 	
@@ -491,18 +491,6 @@ class WikiPageController {
 	    wp_redirect( $url );
 	    exit();
 	    }
-	}
-	
-	function curPageURL() {
-	 $pageURL = 'http';
-	 if ($_SERVER["HTTPS"] == "on") {$pageURL .= "s";}
-	 $pageURL .= "://";
-	 if ($_SERVER["SERVER_PORT"] != "80") {
-	  $pageURL .= $_SERVER["SERVER_NAME"].":".$_SERVER["SERVER_PORT"].$_SERVER["REQUEST_URI"];
-	 } else {
-	  $pageURL .= $_SERVER["SERVER_NAME"].$_SERVER["REQUEST_URI"];
-	 }
-	 return $pageURL;
 	}
 	
 	function anon_meta_save_as_revision($revision_id) {
