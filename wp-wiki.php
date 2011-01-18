@@ -3,8 +3,8 @@
 Plugin Name:WordPress Wiki
 Plugin URI: http://wordpress.org/extend/plugins/wordpress-wiki/
 Description: Add Wiki functionality to your wordpress site.
-Version: 0.9RC1
-Author: Instinct Entertainment/Matthew Gerring
+Version: 1.0
+Author: Dan Milward/Matthew Gerring
 Author URI: http://www.instinct.co.nz
 */
 
@@ -16,18 +16,18 @@ class WP_Wiki {
 	function WP_Wiki() {
 		global $wp_version;
 		
-		//include the admin page
-		//include('wpw-admin-menu.php');
-		//include the class up here so it doesn't get re-declared- fixes issue #4 on GitHub. Thanks Nexiom!
-		include('lib/WPW_WikiParser.php');
-		
 		//include component controllers
 		include('model/wiki_post_type.php');
 		include('controllers/wiki_pages.php');
 		include('controllers/wiki_notifications.php');
 		include('controllers/wiki_feed.php');
 		include('controllers/wiki_admin.php');
+		include('controllers/wiki_dashboard_widget.php');
+		include('controllers/wiki_user_contrib_widget.php');
 		include('wiki_helpers.php');
+		
+		//include Wiki Parser class here so it doesn't get re-declared- fixes issue #4 on GitHub. Thanks Nexiom!
+		include('lib/WPW_WikiParser.php');
 		
 		/**
 		* Guess the wp-content and plugin urls/paths
@@ -48,15 +48,12 @@ class WP_Wiki {
 		//Enables Wiki Pages
 		$WikiPostType = new WikiPostType();
 		
-		//Create classes for our components. This will be changed to allow 
+		//Create classes for our components. This will be changed to allow filtering in a future release.
 		$WikiPageController = new WikiPageController();
 		$WikiNotifications = new WikiNotifications();
 		$WikiFeed = new WikiFeed();
 		$WikiAdmin = new WikiAdmin();
-		
-		//This checks if we're working with a wiki page, rather than running two seperate checks for backwards compatibility
-		
-		//NEW!
+		$WikiDashboardWidget = new WikiDashboardWidget();
 		
 		//Version-specific actions and filters
 		
@@ -106,6 +103,10 @@ class WP_Wiki {
 		add_action('admin_menu', array($WikiAdmin,'register_options_page'));
 		add_action('save_post',array($WikiAdmin,'replace_current_with_pending'));
 		add_action('admin_menu', array($WikiAdmin,'add_custom_box'));
+		
+		//Widgets
+		add_action('widgets_init', create_function('', 'return register_widget("WikiUserContribWidget");'));
+		add_action('wp_dashboard_setup', array($WikiDashboardWidget, 'dashboard_widget_hook') );
 	}
 }
 $WP_Wiki = new WP_Wiki();
