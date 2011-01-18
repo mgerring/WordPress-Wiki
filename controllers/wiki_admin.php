@@ -68,7 +68,7 @@ class WikiAdmin {
 		echo "Succesfully upgraded Wiki Editor role";
 	}
 	
-	function wpw_upgrade() {
+	function upgrade() {
 		//Alternate form in case we're upgrading.
 		
 		global $wp_version;
