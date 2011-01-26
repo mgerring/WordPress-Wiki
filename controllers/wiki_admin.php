@@ -130,6 +130,20 @@ class WikiAdmin {
 	
 	//On page update/edit
 	
+	function convert_pages_recursively($id) {
+		$children = get_posts('post_type=any&post_parent='.$id.'&status=publish');
+		if (!empty($children)) {
+			foreach ($children as $child) {
+				$child->post_type = 'wiki';
+				$child->post_status = 'publish';
+				$this->convert_pages_recursively($child->ID);
+				wp_update_post($child);
+			}
+		} else {
+			return;
+		}
+	}
+	
 	function replace_current_with_pending($id) {
 		//$revision = get_posts('include='.$id.'&post_status=pending');
 		//var_dump($revision[0])
@@ -172,25 +186,16 @@ class WikiAdmin {
 			$GLOBALS['wpw_prevent_recursion'] = true;
 			$id_we_are_changing = $_POST['wpw_change_wiki_id'];
 			$update_post = get_post($id_we_are_changing, 'ARRAY_A');
-			$children = get_posts('post_type=any&post_parent='.$id_we_are_changing.'&status=publish');
-			//unset($update_post['ID']);
-			//unset($update_post['post_parent']);
+			//The hackiest hack that ever hacked
+			$this->convert_pages_recursively($id_we_are_changing);
 			$update_post['post_type'] = 'wiki';
 			$update_post['post_status'] = 'publish';
 			$new = wp_update_post($update_post);
-			if (!empty($children)) {
-				foreach ($children as $child) {
-					$child->post_type = 'wiki';
-					$child->post_status = 'publish';
-					wp_update_post($child);
-				}
-			}
 			wp_redirect( get_edit_post_link($new, 'go_to_it') );
 		}
 	
 		//echo print_r($_POST, true).get_option('wiki_email_admins');
-	}
-	
+	}	
 	
 	///BUH
 	
