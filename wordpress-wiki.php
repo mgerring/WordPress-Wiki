@@ -15,20 +15,6 @@ class WP_Wiki {
 	
 	function WP_Wiki() {
 		global $wp_version;
-		
-		//include component controllers
-		include('model/wiki_post_type.php');
-		include('controllers/wiki_pages.php');
-		include('controllers/wiki_notifications.php');
-		include('controllers/wiki_feed.php');
-		include('controllers/wiki_admin.php');
-		include('controllers/wiki_dashboard_widget.php');
-		include('controllers/wiki_user_contrib_widget.php');
-		include('wiki_helpers.php');
-		
-		//include Wiki Parser class here so it doesn't get re-declared- fixes issue #4 on GitHub. Thanks Nexiom!
-		include('lib/WPW_WikiParser.php');
-		
 		/**
 		* Guess the wp-content and plugin urls/paths
 		*/
@@ -44,6 +30,21 @@ class WP_Wiki {
 		
 		define('WPWIKI_FILE_PATH', dirname(__FILE__));
 		define('WPWIKI_DIR_NAME', basename(WPWIKI_FILE_PATH));
+		
+		//include component controllers
+		include(WPWIKI_FILE_PATH.'/model/wiki_post_type.php');
+		include(WPWIKI_FILE_PATH.'/controllers/wiki_pages.php');
+		include(WPWIKI_FILE_PATH.'/controllers/wiki_notifications.php');
+		include(WPWIKI_FILE_PATH.'/controllers/wiki_feed.php');
+		include(WPWIKI_FILE_PATH.'/controllers/wiki_admin.php');
+		include(WPWIKI_FILE_PATH.'/controllers/wiki_dashboard_widget.php');
+		include(WPWIKI_FILE_PATH.'/controllers/wiki_user_contrib_widget.php');
+		include(WPWIKI_FILE_PATH.'/wiki_helpers.php');
+		
+		//include Wiki Parser class here so it doesn't get re-declared- fixes issue #4 on GitHub. Thanks Nexiom!
+		include(WPWIKI_FILE_PATH.'/lib/wpw_wikiparser.php');
+		
+		
 		
 		//Enables Wiki Pages
 		$WikiPostType = new WikiPostType();
