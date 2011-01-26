@@ -65,7 +65,7 @@ class WP_Wiki {
 			add_action('init', array($WikiPostType,'set_permissions') );
 			
 			//Make Table of Contents on by default for Wiki post type
-			add_action('publish_wiki',array($WikiPageController,'set_toc'));
+			add_action('publish_wiki',array($WikiPageController,'set_toc'), 12);
 			
 			//Make Table of Contents on by default for pages marked as Wikis
 			add_action('publish_page',array($WikiPageController,'set_toc'));
@@ -101,7 +101,8 @@ class WP_Wiki {
 		
 		//Admin pages
 		add_action('admin_menu', array($WikiAdmin,'register_options_page'));
-		add_action('save_post',array($WikiAdmin,'replace_current_with_pending'));
+		add_action('publish_wiki', array($WikiAdmin,'replace_current_with_pending'), 11);
+		add_action('publish_page', array($WikiAdmin,'replace_current_with_pending'), 11);
 		add_action('admin_menu', array($WikiAdmin,'add_custom_box'));
 		
 		//Widgets

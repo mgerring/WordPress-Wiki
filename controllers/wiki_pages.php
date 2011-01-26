@@ -28,6 +28,7 @@ class WikiPageController {
 		//If we have revisions...
 		if($revisions) {
 			//Loop through them!
+			$count = 0;
 			foreach ($revisions as $revision) {
 				if( @wp_get_post_autosave($post->ID)->ID != $revision->ID) {
 					
@@ -36,9 +37,10 @@ class WikiPageController {
 					$date = date(__('m/d/y g:i a'), mktime($revision->post_modified) );
 					$revision_title = sprintf(__('Revision @ %1s by %2s'), $date, $author);
 					$output.= '<a href="'.get_permalink($post->ID).'?revision='.$revision->ID.'">'.$revision_title.'</a><br />';
+					$count++;	
 				}
 			}
-		}
+		} 
 		return $output;
 		}
 	}
@@ -317,8 +319,10 @@ class WikiPageController {
 	
 	
 	function set_toc($post_id) {
-		if ($this->WikiHelper->is_wiki('check_no_post',$post_id))
+		if ($this->WikiHelper->is_wiki('check_no_post',$post_id) & get_post_meta($post_id,'_wiki_page_toc_on_by_default', true) != 1) {
 			update_post_meta($post_id,'_wiki_page_toc',1);
+			update_post_meta($post_id,'_wiki_page_toc_on_by_default',1);
+		}
 	}
 	
 	function save_post() {

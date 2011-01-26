@@ -52,12 +52,6 @@ class WikiAdmin {
 	}
 	
 	function options_page() {
-		//TODO: This options page needs to provide a means to upgrade old WP-Wiki installs.
-		//	1. For installs on 3.0, upgrade wiki pages to custom post types
-		//	2. For all installs, upgrade options. They are:
-		//		wiki_email_admins
-		//		wiki_show_toc_onfrontpage
-		//		wiki_cron_email
 		global $wp_version;
 		$wpw_options = get_option('wpw_options');
 		include(WPWIKI_FILE_PATH.'/views/options_page.php');
@@ -138,7 +132,8 @@ class WikiAdmin {
 	
 	function replace_current_with_pending($id) {
 		//$revision = get_posts('include='.$id.'&post_status=pending');
-		//var_dump($revision[0]);
+		//var_dump($revision[0])
+		
 		if(!isset($_POST['wpw_is_admin']))
 			return;
 		
@@ -148,18 +143,18 @@ class WikiAdmin {
 		global $wp_version;
 		
 		if($wp_version < 3.0) {
-			if(isset($_POST['wpw_is_wiki']) && $_POST['wpw_is_wiki'] == "true" )
+			if(isset($_POST['wpw_is_wiki']) && $_POST['wpw_is_wiki'] == "true" ):
 				update_post_meta($id, '_wiki_page', 1);
-			else
+			else:
 				delete_post_meta($id, '_wiki_page');
+			endif;
 		}
 		
 		if($this->WikiHelper->is_wiki('check_no_post',$id)) {
-			if(isset( $_POST['wpw_toc']) ):
-				if ($_POST['wpw_toc'] == "true" )
-					update_post_meta($id, '_wiki_page_toc', 1);
-				else
-					delete_post_meta($id, '_wiki_page_toc');
+			if(isset( $_POST['wpw_toc']) && ($_POST['wpw_toc'] == "true" ) ):
+				update_post_meta($id, '_wiki_page_toc', 1);
+			else:
+				delete_post_meta($id, '_wiki_page_toc');
 			endif;
 				
 			if(isset($_POST['wpw_approve_revision']) && $_POST['wpw_approve_revision'] == "true" ) {
@@ -177,12 +172,19 @@ class WikiAdmin {
 			$GLOBALS['wpw_prevent_recursion'] = true;
 			$id_we_are_changing = $_POST['wpw_change_wiki_id'];
 			$update_post = get_post($id_we_are_changing, 'ARRAY_A');
-			unset($update_post['ID']);
-			unset($update_post['post_parent']);
+			$children = get_posts('post_type=any&post_parent='.$id_we_are_changing.'&status=publish');
+			//unset($update_post['ID']);
+			//unset($update_post['post_parent']);
 			$update_post['post_type'] = 'wiki';
 			$update_post['post_status'] = 'publish';
-			$new = wp_insert_post($update_post);
-			wp_delete_post($id_we_are_changing, true);
+			$new = wp_update_post($update_post);
+			if (!empty($children)) {
+				foreach ($children as $child) {
+					$child->post_type = 'wiki';
+					$child->post_status = 'publish';
+					wp_update_post($child);
+				}
+			}
 			wp_redirect( get_edit_post_link($new, 'go_to_it') );
 		}
 	
@@ -257,7 +259,7 @@ class WikiAdmin {
 	?>
 			<h5><?php _e('Wiki Page'); ?></h5>	
 			<input type="checkbox" name="wpw_change_to_wiki" value="true" />
-			<label for="wpw_change_to_wiki"><?php _e('This is a Wiki page. Logged in users can edit its content.'); ?></label>
+			<label for="wpw_change_to_wiki"><?php _e('Convert this page and all of its subpages to Wikis.'); ?></label>
 			<input type="hidden" name="wpw_change_wiki_id" value="<?php echo $_GET['post']; ?>" />
 	<?php  
 	
