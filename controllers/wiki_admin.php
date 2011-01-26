@@ -37,10 +37,15 @@ class WikiAdmin {
 		if ( get_option( 'numberOfRevisions' ) != false ) {
 			return true;
 		} else {
-			$wiki = get_role('wiki_editor');
-			if ( $wiki->has_cap('edit_posts') ) {
-				return true;	
+			$wiki = get_role('wiki_editor');			
+			if ( $wiki != null) {
+				if ($wiki->has_cap('edit_posts') ) {
+					return true;
+				}	
 			} else {
+				if ($wiki == null) {
+					add_role( 'wiki_editor', 'Wiki Editor', array('read' => true) );
+				}
 				return false;
 			}
 		}
@@ -63,7 +68,6 @@ class WikiAdmin {
 		$wiki = get_role('wiki_editor');
 		if ($wiki->has_cap('edit_posts')) {
 			remove_role('wiki_editor');
-			add_role( 'wiki_editor', 'Wiki Editor', array('read' => true) );
 		}
 		echo "Succesfully upgraded Wiki Editor role";
 	}

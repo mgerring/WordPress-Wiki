@@ -98,7 +98,9 @@ class WikiPageController {
 	
 	
 	function styles() {
-		wp_enqueue_style('wordpress-wiki', PLUGIN_URL ."/".WPWIKI_DIR_NAME."/static/style.css");
+    	wp_enqueue_style('wordpress-wiki', PLUGIN_URL ."/".WPWIKI_DIR_NAME."/static/style.css");
+    	if ( is_rtl() )
+        	wp_enqueue_style('wordpress-wiki-rtl', PLUGIN_URL ."/".WPWIKI_DIR_NAME."/static/rtl.css");
 	}
 	
 	function scripts() {
