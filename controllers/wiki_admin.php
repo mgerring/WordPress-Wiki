@@ -131,16 +131,14 @@ class WikiAdmin {
 	//On page update/edit
 	
 	function convert_pages_recursively($id) {
-		$children = get_posts('post_type=any&post_parent='.$id.'&status=publish');
+		$children = get_posts('post_type=any&post_parent='.$id.'&status=publish&numberposts=-1');
 		if (!empty($children)) {
 			foreach ($children as $child) {
 				$child->post_type = 'wiki';
 				$child->post_status = 'publish';
-				$this->convert_pages_recursively($child->ID);
 				wp_update_post($child);
+				$this->convert_pages_recursively($child->ID);
 			}
-		} else {
-			return;
 		}
 	}
 	
