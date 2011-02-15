@@ -52,5 +52,17 @@ class WikiHelpers {
 		}
 		return false;
 	}
+	
+	function is_restricted() {
+		$wpw_options = get_option('wpw_options');
+		if ( isset($wpw_options['restrict_edits']) && $wpw_options['restrict_edits'] == 1 ):
+			if ( current_user_can('edit_wiki') )
+				return false;
+			else
+				return true;
+		else:
+			return false;
+		endif;
+	}
 }
 ?>

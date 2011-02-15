@@ -1,0 +1,23 @@
+div.contents {
+	float: left;
+	margin-left: 0;
+	margin-right: 16px;
+}
+
+div.contents ol li.lvl2 {
+	margin-left: 0;
+	margin-right: 20px;	
+}
+
+div.contents h3 {
+	padding-right: 0px;
+}
+
+#wpw_tab_nav {
+	text-align:left;
+}
+
+#wpw_tab_nav li {
+	margin-left: 0;
+	margin-right: 10px;
+}
