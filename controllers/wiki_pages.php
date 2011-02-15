@@ -131,18 +131,17 @@ class WikiPageController {
 		global $post;
 		if ( $this->WikiHelper->is_wiki('front_end_check') ) {
 			$wpw_options = get_option('wpw_options');
-			//if ( current_user_can('edit_wiki') ) {
-				remove_filter('the_content', 'wpautop');
-				remove_filter('the_content', 'wptexturize');
-				add_action('get_header', array($this,'styles'));
-				add_action('get_header', array($this,'scripts'), 9);
+			remove_filter('the_content', 'wpautop');
+			remove_filter('the_content', 'wptexturize');
+			add_action('get_header', array($this,'styles'));
+			add_action('get_header', array($this,'scripts'), 9);
+			if ( !$this->WikiHelper->is_restricted() ) {
 				add_filter('the_content',array($this, 'substitute_in_revision_content'),11);
 				add_filter('the_content',array($this,'front_end_interface'),12);
 				add_action('wp_footer',array($this,'inline_editor'));
-					
-			//} else {
-			//	add_filter('the_content','wpw_nope');
-			//}
+			} else {
+				add_filter('the_content',array($this,'wpw_nope') );
+			}
 		}
 	}
 
@@ -151,8 +150,7 @@ class WikiPageController {
 	
 	function wpw_nope($content) {
 		global $post;
-		$content = wpw_wiki_parser($content, $post->post_title);
-		$content = wpw_table_of_contents($content);
+		$content = $this->get_content($content);
 		$message = __('This page is a Wiki!');
 		$message .= '&nbsp;<a href="'.wp_login_url(get_permalink($post->ID)).'">'.__('Log in or register an account to edit.').'</a>';
 		return $content.$message;
@@ -326,7 +324,7 @@ class WikiPageController {
 	}
 	
 	function save_post() {
-		if (isset($_POST['_wpnonce']) && wp_verify_nonce($_POST['_wpnonce'], 'wpw_edit_form')) {
+		if (!$this->WikiHelper->is_restricted() && isset($_POST['_wpnonce']) && wp_verify_nonce($_POST['_wpnonce'], 'wpw_edit_form')) {
 			if ($_POST['wpw_editor_content'] != null) {
 				extract($_POST);
 			}
