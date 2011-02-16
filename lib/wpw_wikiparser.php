@@ -1,5 +1,5 @@
 <?php
-require_once('class_WikiParser.php');
+require_once(WPWIKI_FILE_PATH.'/lib/class_wikiparser.php');
 
 class WPW_WikiParser extends WikiParser {
 	// 2011-01-02 arjen adjusted to deal with namespaces

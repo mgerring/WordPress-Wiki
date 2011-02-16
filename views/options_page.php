@@ -63,6 +63,17 @@
 				<td><input type="checkbox" name="wpw_options[cron_email]" <?php $this->check_option($wpw_options, 'cron_email', "1"); ?> value="1" /></td>
 			</tr>
 			
+<<<<<<< HEAD
+=======
+			<tr valign="top">
+				<th scope="row">
+				<?php _e('Restrict editing to logged in users'); ?>
+				<p><em><?php _e('Only allow logged in users to make changes to wiki pages'); ?></em></p>
+				</th>
+				<td><input type="checkbox" name="wpw_options[restrict_edits]" <?php $this->check_option($wpw_options, 'restrict_edits', "1"); ?> value="1" /></td>
+			</tr>
+			
+>>>>>>> master
 			<!--tr valign="top">
 				<th scope="row">
 					Submit revisions for review before publishing
