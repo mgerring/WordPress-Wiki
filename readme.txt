@@ -4,7 +4,7 @@ Donate link: http://www.instinct.co.nz/
 Tags: wiki
 Requires at least: 2.8
 Tested up to: 3.1
-Stable Tag: 1.0
+Stable Tag: 1.0.1
 
 == Description ==
 
