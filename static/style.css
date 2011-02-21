@@ -8,54 +8,20 @@ div.contents {
 	margin-bottom: 12px;
 	font-size: 85%;
 	max-width: 45%;
-<<<<<<< HEAD
-    
-=======
->>>>>>> master
 }
 
 div.contents ol li {
 	list-style-type: none;
 	background: none;
-<<<<<<< HEAD
-	list-style-position:outside;
-	font-family:"Lucida Grande",Verdana,"Bitstream Vera Sans",Arial,sans-serif;
-	font-size: 85%;
-	}
-=======
 	list-style-position: outside;
 	font-family: "Lucida Grande", Verdana, "Bitstream Vera Sans", Arial, sans-serif;
 	font-size: 85%;
 }
->>>>>>> master
 
 div.contents ol li.lvl2 {
 	margin-left: 20px;	
 }
 
-<<<<<<< HEAD
-
-
-div.contents a:hover {
-	color:#D54E21;
-}
-
-div.contents a {
-	color:#21759B;
-	font-weight:bold;
-	text-decoration:none;
-}
-
-div.contents h3 {
-	color:#333333;
-	background: none;
-	font-family:Georgia,"Times New Roman",Times,serif;
-	margin-bottom:10px;
-	padding-left: 0px;
-	padding-bottom: 3px;
-	border-bottom:1px solid #DADADA;
-        margin-top: 0px;
-=======
 div.contents a:hover {
 	color: #D54E21;
 }
@@ -75,39 +41,12 @@ div.contents h3 {
 	padding-bottom: 3px;
 	border-bottom: 1px solid #DADADA;
 	margin-top: 0px;
->>>>>>> master
 }
 
 div.contents a.hide, div.contents a.show {
 	cursor: pointer;
 	font-size: 85%;
 }
-<<<<<<< HEAD
-div.contents a.hide, div.contents a.show {
-	cursor: pointer;
-	font-size: 85%;
-  display: inline;
-}
-#wpw_tab_nav {
-	list-style-type:none;
-	text-align:right;
-	width:100%;
-}
-#wpw_tab_nav li {
-	display:inline;
-	margin-left:10px;
-}
-#wpw_tab_nav li a {
-	text-decoration:none;
-}
-#wpw_tab_nav li.ui-tabs-selected {
-	font-weight:bold;
-	border-bottom:1px dotted #000;
-}
-.ui-tabs .ui-tabs-hide, .wpw-hide-it {
-		display: none!important;
-}
-=======
 
 div.contents a.hide, div.contents a.show {
 	cursor: pointer;
@@ -138,4 +77,3 @@ div.contents a.hide, div.contents a.show {
 .ui-tabs .ui-tabs-hide, .wpw-hide-it {
 	display: none!important;
 }
->>>>>>> master
