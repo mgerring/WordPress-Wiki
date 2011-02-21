@@ -37,12 +37,6 @@ class WikiAdmin {
 		if ( get_option( 'numberOfRevisions' ) != false ) {
 			return true;
 		} else {
-<<<<<<< HEAD
-			$wiki = get_role('wiki_editor');
-			if ( $wiki->has_cap('edit_posts') ) {
-				return true;	
-			} else {
-=======
 			$wiki = get_role('wiki_editor');			
 			if ( $wiki != null) {
 				if ($wiki->has_cap('edit_posts') ) {
@@ -52,22 +46,12 @@ class WikiAdmin {
 				if ($wiki == null) {
 					add_role( 'wiki_editor', 'Wiki Editor', array('read' => true) );
 				}
->>>>>>> master
 				return false;
 			}
 		}
 	}
 	
 	function options_page() {
-<<<<<<< HEAD
-		//TODO: This options page needs to provide a means to upgrade old WP-Wiki installs.
-		//	1. For installs on 3.0, upgrade wiki pages to custom post types
-		//	2. For all installs, upgrade options. They are:
-		//		wiki_email_admins
-		//		wiki_show_toc_onfrontpage
-		//		wiki_cron_email
-=======
->>>>>>> master
 		global $wp_version;
 		$wpw_options = get_option('wpw_options');
 		include(WPWIKI_FILE_PATH.'/views/options_page.php');
@@ -78,10 +62,6 @@ class WikiAdmin {
 		$wiki = get_role('wiki_editor');
 		if ($wiki->has_cap('edit_posts')) {
 			remove_role('wiki_editor');
-<<<<<<< HEAD
-			add_role( 'wiki_editor', 'Wiki Editor', array('read' => true) );
-=======
->>>>>>> master
 		}
 		echo "Succesfully upgraded Wiki Editor role";
 	}
@@ -150,11 +130,6 @@ class WikiAdmin {
 	
 	//On page update/edit
 	
-<<<<<<< HEAD
-	function replace_current_with_pending($id) {
-		//$revision = get_posts('include='.$id.'&post_status=pending');
-		//var_dump($revision[0]);
-=======
 	function convert_pages_recursively($id) {
 		$children = get_posts('post_type=any&post_parent='.$id.'&status=publish&numberposts=-1');
 		if (!empty($children)) {
@@ -171,7 +146,6 @@ class WikiAdmin {
 		//$revision = get_posts('include='.$id.'&post_status=pending');
 		//var_dump($revision[0])
 		
->>>>>>> master
 		if(!isset($_POST['wpw_is_admin']))
 			return;
 		
@@ -181,20 +155,6 @@ class WikiAdmin {
 		global $wp_version;
 		
 		if($wp_version < 3.0) {
-<<<<<<< HEAD
-			if(isset($_POST['wpw_is_wiki']) && $_POST['wpw_is_wiki'] == "true" )
-				update_post_meta($id, '_wiki_page', 1);
-			else
-				delete_post_meta($id, '_wiki_page');
-		}
-		
-		if($this->WikiHelper->is_wiki('check_no_post',$id)) {
-			if(isset( $_POST['wpw_toc']) ):
-				if ($_POST['wpw_toc'] == "true" )
-					update_post_meta($id, '_wiki_page_toc', 1);
-				else
-					delete_post_meta($id, '_wiki_page_toc');
-=======
 			if(isset($_POST['wpw_is_wiki']) && $_POST['wpw_is_wiki'] == "true" ):
 				update_post_meta($id, '_wiki_page', 1);
 			else:
@@ -207,7 +167,6 @@ class WikiAdmin {
 				update_post_meta($id, '_wiki_page_toc', 1);
 			else:
 				delete_post_meta($id, '_wiki_page_toc');
->>>>>>> master
 			endif;
 				
 			if(isset($_POST['wpw_approve_revision']) && $_POST['wpw_approve_revision'] == "true" ) {
@@ -225,30 +184,16 @@ class WikiAdmin {
 			$GLOBALS['wpw_prevent_recursion'] = true;
 			$id_we_are_changing = $_POST['wpw_change_wiki_id'];
 			$update_post = get_post($id_we_are_changing, 'ARRAY_A');
-<<<<<<< HEAD
-			unset($update_post['ID']);
-			unset($update_post['post_parent']);
-			$update_post['post_type'] = 'wiki';
-			$update_post['post_status'] = 'publish';
-			$new = wp_insert_post($update_post);
-			wp_delete_post($id_we_are_changing, true);
-=======
 			//The hackiest hack that ever hacked
 			$this->convert_pages_recursively($id_we_are_changing);
 			$update_post['post_type'] = 'wiki';
 			$update_post['post_status'] = 'publish';
 			$new = wp_update_post($update_post);
->>>>>>> master
 			wp_redirect( get_edit_post_link($new, 'go_to_it') );
 		}
 	
 		//echo print_r($_POST, true).get_option('wiki_email_admins');
-<<<<<<< HEAD
-	}
-	
-=======
 	}	
->>>>>>> master
 	
 	///BUH
 	
@@ -317,11 +262,7 @@ class WikiAdmin {
 	?>
 			<h5><?php _e('Wiki Page'); ?></h5>	
 			<input type="checkbox" name="wpw_change_to_wiki" value="true" />
-<<<<<<< HEAD
-			<label for="wpw_change_to_wiki"><?php _e('This is a Wiki page. Logged in users can edit its content.'); ?></label>
-=======
 			<label for="wpw_change_to_wiki"><?php _e('Convert this page and all of its subpages to Wikis.'); ?></label>
->>>>>>> master
 			<input type="hidden" name="wpw_change_wiki_id" value="<?php echo $_GET['post']; ?>" />
 	<?php  
 	

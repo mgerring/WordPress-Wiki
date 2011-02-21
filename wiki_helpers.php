@@ -52,8 +52,6 @@ class WikiHelpers {
 		}
 		return false;
 	}
-<<<<<<< HEAD
-=======
 	
 	function is_restricted() {
 		$wpw_options = get_option('wpw_options');
@@ -66,6 +64,5 @@ class WikiHelpers {
 			return false;
 		endif;
 	}
->>>>>>> master
 }
 ?>
