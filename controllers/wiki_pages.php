@@ -325,6 +325,7 @@ class WikiPageController {
 	
 	function save_post() {
 		if (!$this->WikiHelper->is_restricted() && isset($_POST['_wpnonce']) && wp_verify_nonce($_POST['_wpnonce'], 'wpw_edit_form')) {
+			$wpw_options = get_option('wpw_options');
 			if ($_POST['wpw_editor_content'] != null) {
 				extract($_POST);
 			}
@@ -348,10 +349,14 @@ class WikiPageController {
 				}
 			}
 			*/
-			$n_post = array();
+			$n_post = array(); 
+			$return = array();
 			//if (!isset($wpw_revision_stack)) {
-				
-				$n_post['post_content'] = $wpw_editor_content;
+				if (!empty($wpw_editor_content)):
+					$n_post['post_content'] = $wpw_editor_content;
+				else:
+					$n_post['post_content'] = " ";
+				endif;
 				/*
 				if ($commit != 1) {
 					$n_post['post_content'] .='[swrmeta dob="'.$dob.'" loc="'.$loc.'" state="'.$state.'" sum_content="'.htmlspecialchars($sum_content).'" lnk1="'.$lnk1.'" lnk2="'.$lnk2.'" lnk3="'.$lnk3.'"]';
@@ -359,10 +364,19 @@ class WikiPageController {
 				*/
 				if (!is_user_logged_in())
 					$n_post['post_author'] = 0;
-	
-				$n_post['ID'] = $wpw_id;
+
+				if( isset($wpw_options['revision_pending']) && $wpw_options['revision_pending'] == "true" ):
+					$n_post['post_parent'] = $wpw_id;
+					$n_post['post_status'] = 'pending';
+					$n_post['post_type'] = 'revision';
+					$return['message'] = "Revision submitted for review.";
+				else:
+					$n_post['ID'] = $wpw_id;
+					$return['message'] = "Post saved.";
+				endif;
+				
 			// Insert the post into the database
-				$n_id = wp_update_post( $n_post );
+				$return['status'] = wp_insert_post( $n_post );
 				
 				if (!is_user_logged_in()):
 					$wpw_anon_meta = array(
@@ -373,7 +387,7 @@ class WikiPageController {
 					add_post_meta($n_id, '_wpw_anon_meta', $wpw_anon_meta);
 				endif;
 				
-				return $n_id;
+				return $return;
 			/*
 			} else {
 				$n_post = array();
@@ -404,8 +418,8 @@ class WikiPageController {
 	}
 	
 	function ajax_save() {
-		if ($this->save_post())
-			die('Post saved!');
+		if (0 != $return = $this->save_post())
+			die($return['message']);
 	}
 	
 	function no_js_save() {

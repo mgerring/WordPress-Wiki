@@ -70,16 +70,24 @@
 				</th>
 				<td><input type="checkbox" name="wpw_options[restrict_edits]" <?php $this->check_option($wpw_options, 'restrict_edits', "1"); ?> value="1" /></td>
 			</tr>
-			
-			<!--tr valign="top">
+			      
+			<tr valign="top">
 				<th scope="row">
 					Submit revisions for review before publishing
-					<p><em>Check this box if you want to review edits submitted
-					to your wiki pages before making them live on the site.</em></p>
+				<?php if (!is_plugin_active('revisionary/revisionary.php')): ?>
+					<p><em>You need to install and activate Revisionary before you can 
+					activiate this feature. 
+					<a href="<?php echo admin_url(); ?>plugin-install.php?tab=search&type=term&s=revisionary&plugin-search-input=Search+Plugins">Click here to install it automatically</a> or
+					<a href="http://wordpress.org/extend/plugins/revisionary/">download it from WordPress.org.</a></em></p>
+				</th>
+				<?php else: ?>
+					<p><em>Place all submitted edits in a pending pool for approval rather than immediately making
+					changes go live.</em></p>
 				</th>
 				
 				<td><input type="checkbox" name="wpw_options[revision_pending]" <?php $this->check_option($wpw_options, "revision_pending", "true"); ?> value="true" /></td>
-			</tr-->
+				<?php endif; ?>
+			</tr>
 			
 		<input type="hidden" name="wpw_options[wpw_upgrade]" value="done_gone_and_upgraded" />
 
