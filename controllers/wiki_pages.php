@@ -326,46 +326,16 @@ class WikiPageController {
 	function save_post() {
 		if (!$this->WikiHelper->is_restricted() && isset($_POST['_wpnonce']) && wp_verify_nonce($_POST['_wpnonce'], 'wpw_edit_form')) {
 			$wpw_options = get_option('wpw_options');
-			if ($_POST['wpw_editor_content'] != null) {
-				extract($_POST);
-			}
-			//First, save everything marked as code
-			
-			/*
-			//Checks to see if changes in the draft page are being committed to the parent page.
-			if ($commit == 1) {
-				// If so, we use the parent ID.
-				$pid = $bio_id;
-			} else {
-				//Otherwise, we need to check if we're reverting the draft to a prior revision.
-				//This bit of code takes our revision ID and gets the ID of the page it belongs to.
-				$rev = wp_is_post_revision($draft_id);
-				if ($rev) {
-					$pid = $rev;
-				} else {
-				//If we're making new changes to the draft, and not committing it, and not working from a revision, we simply
-				//use the ID passed along with the form.
-				$pid = $draft_id;
-				}
-			}
-			*/
-			$n_post = array(); 
+			extract($_POST);
+			$n_post = get_post($wpw_id, ARRAY_A); 
 			$return = array();
-			//if (!isset($wpw_revision_stack)) {
-				if (!empty($wpw_editor_content)):
-					$n_post['post_content'] = $wpw_editor_content;
-				else:
-					$n_post['post_content'] = " ";
-				endif;
-				/*
-				if ($commit != 1) {
-					$n_post['post_content'] .='[swrmeta dob="'.$dob.'" loc="'.$loc.'" state="'.$state.'" sum_content="'.htmlspecialchars($sum_content).'" lnk1="'.$lnk1.'" lnk2="'.$lnk2.'" lnk3="'.$lnk3.'"]';
-				}
-				*/
+				$n_post['post_content'] = $wpw_editor_content;
+
 				if (!is_user_logged_in())
 					$n_post['post_author'] = 0;
 
 				if( isset($wpw_options['revision_pending']) && $wpw_options['revision_pending'] == "true" ):
+					
 					$n_post['post_parent'] = $wpw_id;
 					$n_post['post_status'] = 'pending';
 					$n_post['post_type'] = 'revision';
@@ -374,10 +344,7 @@ class WikiPageController {
 					$n_post['ID'] = $wpw_id;
 					$return['message'] = "Post saved.";
 				endif;
-				
-			// Insert the post into the database
-				$return['status'] = wp_insert_post( $n_post );
-				
+
 				if (!is_user_logged_in()):
 					$wpw_anon_meta = array(
 						'ip' => $_SERVER['REMOTE_ADDR'],
@@ -386,31 +353,8 @@ class WikiPageController {
 					
 					add_post_meta($n_id, '_wpw_anon_meta', $wpw_anon_meta);
 				endif;
-				
+				$return['status'] = wp_insert_post( $n_post );
 				return $return;
-			/*
-			} else {
-				$n_post = array();
-				$n_post['post_parent'] = $wpw_id;
-				$n_post['post_title'] = get_the_title($wpw_id);
-				$n_post['post_content'] = clean_pre(apply_filters('wp_insert_post_data',htmlspecialchars_decode($wpw_editor_content)));
-				//$n_post['post_content'] = $wpw_editor_content;
-				$n_post['post_status'] = 'pending';
-					//$n_post['post_author'] = 1;
-				$n_post['post_type'] = 'wiki';
-					//$n_post['page_template'] = 'wiki.php';
-				// Insert the post into the database
-				if (wp_insert_post( $n_post ))
-					die('Post submitted for review!');
-			
-			*/
-			/*
-			$bio_meta_keys = array('dob','loc','state','lnks','notes');
-			foreach ($bio_meta_keys as $key => $value) {
-				update_post_meta($pid, $value, strip_tags($$value), FALSE);
-			}
-			update_post_meta($pid, 'sum_content',htmlspecialchars_decode($sum_content));
-			*/
 		} else {
 			//This is the error message that displays if a user has no credentials to edit pages.
 			die(__('You don\'t have permission to do that.'));
