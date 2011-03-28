@@ -16,8 +16,9 @@ class WP_Wiki {
 	function WP_Wiki() {
 		global $wp_version;
 		/**
-		* Guess the wp-content and plugin urls/paths
+		* Todo: There is no need to guess the wp-content folder any more...
 		*/
+		
 		if ( !defined('WP_CONTENT_URL') )
 		    define( 'WP_CONTENT_URL', get_option('siteurl') . '/wp-content');
 		if ( !defined('WP_CONTENT_DIR') )
