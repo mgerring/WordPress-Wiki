@@ -28,7 +28,10 @@ class WikiAdmin {
 											SELECT ID from $wpdb->posts
 											WHERE post_type='wiki'
 										)", ARRAY_N);
-		add_submenu_page('edit.php?post_type=wiki', 'pending', 'Pending <span class="update-plugins"><span class="plugin-count">'.$pending[0][0].'</span></span>', 'manage_options', 'edit.php?post_status=pending&post_type=wiki');
+		if(!empty($pending)) {
+			$bubble = '<span class="update-plugins"><span class="plugin-count">'.$pending[0][0].'</span></span>';
+		}
+		add_submenu_page('edit.php?post_type=wiki', 'pending', 'Pending'.$bubble, 'manage_options', 'edit.php?post_status=pending&post_type=wiki');
 	}
 
 	function register_options_page() {
