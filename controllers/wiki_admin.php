@@ -28,7 +28,7 @@ class WikiAdmin {
 											SELECT ID from $wpdb->posts
 											WHERE post_type='wiki'
 										)", ARRAY_N);
-		if(!empty($pending)) {
+		if($pending[0][0] != 0) {
 			$bubble = '<span class="update-plugins"><span class="plugin-count">'.$pending[0][0].'</span></span>';
 		}
 		add_submenu_page('edit.php?post_type=wiki', 'pending', 'Pending'.$bubble, 'manage_options', 'edit.php?post_status=pending&post_type=wiki');
