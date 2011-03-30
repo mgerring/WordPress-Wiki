@@ -19,6 +19,18 @@ class WikiAdmin {
 			echo 'checked="checked"';
 	}
 	
+	function register_pending_submenu() {
+		global $wpdb;
+		$pending = $wpdb->get_results("SELECT COUNT(ID) FROM $wpdb->posts 
+										WHERE post_type='revision' 
+										AND post_status='pending' 
+										AND post_parent IN( 
+											SELECT ID from $wpdb->posts
+											WHERE post_type='wiki'
+										)", ARRAY_N);
+		add_submenu_page('edit.php?post_type=wiki', 'pending', 'Pending <span class="update-plugins"><span class="plugin-count">'.$pending[0][0].'</span></span>', 'manage_options', 'edit.php?post_status=pending&post_type=wiki');
+	}
+
 	function register_options_page() {
 		
 		$page = add_options_page( 

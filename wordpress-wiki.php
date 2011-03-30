@@ -103,6 +103,7 @@ class WP_Wiki {
 		
 		//Admin pages
 		add_action('admin_menu', array($WikiAdmin,'register_options_page'));
+		add_action('admin_menu', array($WikiAdmin,'register_pending_submenu'));
 		add_action('publish_wiki', array($WikiAdmin,'replace_current_with_pending'), 11);
 		add_action('publish_page', array($WikiAdmin,'replace_current_with_pending'), 11);
 		add_action('admin_menu', array($WikiAdmin,'add_custom_box'));
