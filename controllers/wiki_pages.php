@@ -337,10 +337,10 @@ class WikiPageController {
 					$n_post['post_author'] = 0;
 
 				if( isset($wpw_options['revision_pending']) && $wpw_options['revision_pending'] == "true" ):
-					
 					$n_post['post_parent'] = $wpw_id;
 					$n_post['post_status'] = 'pending';
 					$n_post['post_type'] = 'revision';
+					$n_post['ID'] = null;
 					$return['message'] = "Revision submitted for review.";
 				else:
 					$n_post['ID'] = $wpw_id;
