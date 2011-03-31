@@ -27,12 +27,23 @@ class WikiPostType {
 		
 		$this->permissions = array(
 			'edit_wiki'=>true,
-			'edit_wiki_page'=>true,
-			'edit_wiki_pages'=>true,
-			'edit_others_wiki_pages'=>true,
-			'publish_wiki_pages'=>true,
-			'delete_wiki_page'=>true,
-			'delete_others_wiki_pages'=>false
+			'edit_wikis'=>true,
+			'edit_others_wikis'=>true,
+			'publish_wiki'=>true,
+			'delete_wiki'=>true,
+			'delete_others_wikis'=>false
+		);
+		
+		$this->capabilities = array(
+			'publish_posts' => 'publish_wikis',
+			'edit_posts' => 'edit_wikis',
+			'edit_others_posts' => 'edit_others_wikis',
+			'delete_posts' => 'delete_wikis',
+			'delete_others_posts' => 'delete_others_wikis',
+			'read_private_posts' => 'read_private_wikis',
+			'edit_post' => 'edit_wiki',
+			'delete_post' => 'delete_wiki',
+			'read_post' => 'read_wiki'
 		);
 		
 		$this->post_type_options = array(
@@ -40,10 +51,12 @@ class WikiPostType {
 			'labels'=>$this->labels,
 			'description'=>__('Wiki-enabled page. Users with permission can edit this page.'),
 			'public'=>true,
-			'capability_type'=>'wiki_page',
+			'capability_type'=> array('wiki','wikis'),
+			'capabilities' => $this->capabilities,
 			'supports' => array('title','editor','author','thumbnail','excerpt','comments','revisions','custom-fields','page-attributes'),
 			'hierarchical' => true,
-			'rewrite' => array('slug' => 'wiki', 'with_front' => FALSE)
+			'rewrite' => array('slug' => 'wiki', 'with_front' => FALSE),
+			'map_meta_cap' => true
 		);
 	}
 		
@@ -66,6 +79,45 @@ class WikiPostType {
 			}
 		}
 		
+	}
+	
+	function map_meta_caps( $caps, $cap, $user_id, $args ) {
+		//Totally stolen from Justin Tadlock
+		/* If editing, deleting, or reading a movie, get the post and post type object. */
+		if ( 'edit_wiki' == $cap || 'delete_wiki' == $cap || 'read_wiki' == $cap ) {
+			$post = get_post( $args[0] );
+			$post_type = get_post_type_object( $post->post_type );
+
+			/* Set an empty array for the caps. */
+			$caps = array();
+		}
+
+		/* If editing a movie, assign the required capability. */
+		if ( 'edit_wiki' == $cap ) {
+			$caps[] = $post_type->cap->edit_posts;
+		}
+
+		/* If deleting a movie, assign the required capability. */
+		elseif ( 'delete_wiki' == $cap ) {
+			if ( $user_id == $post->post_author )
+				$caps[] = $post_type->cap->delete_posts;
+			else
+				$caps[] = $post_type->cap->delete_others_posts;
+		}
+
+		/* If reading a private movie, assign the required capability. */
+		elseif ( 'read_wiki' == $cap ) {
+			
+			if ( 'private' != $post->post_status )
+				$caps[] = 'read';
+			elseif ( $user_id == $post->post_author )
+				$caps[] = 'read';
+			else
+				$caps[] = $post_type->cap->read_private_posts;
+		}
+
+		/* Return the capabilities required by the user. */
+		return $caps;
 	}
 	
 		/**

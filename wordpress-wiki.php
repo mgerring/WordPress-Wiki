@@ -64,7 +64,7 @@ class WP_Wiki {
 			add_action('init', array($WikiPostType,'register') );
 			
 			//Set permissions
-			add_action('init', array($WikiPostType,'set_permissions') );
+			add_action('plugins_loaded', array($WikiPostType,'set_permissions'), 1 );
 			
 			//Make Table of Contents on by default for Wiki post type
 			add_action('publish_wiki',array($WikiPageController,'set_toc'), 12);
@@ -77,6 +77,9 @@ class WP_Wiki {
 			//Manage permissions for versions prior to 3.0
 			add_filter('user_has_cap', array($WikiPostType, 'page_cap'), 100, 3);
 		endif;
+		
+		if ($wp_version >= 3.0 && $wp_version < 3.1)
+			add_filter( 'map_meta_cap', array($WikiPostType,'map_meta_caps'), 10, 4 );
 		
 		//Front-end editor
 		add_action('wp', array($WikiPageController, 'set_query'));
