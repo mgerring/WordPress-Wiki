@@ -64,12 +64,12 @@ class WikiPageController {
 			return $content;
 		}
 	
-		preg_match_all("|<h2>(.*)</h2>|", $content, $h2s, PREG_PATTERN_ORDER);
-		$content = preg_replace("|<h2>(.*)</h2>|", "<a name='$1'></a><h2>$1</h2>", $content);
-		$content = preg_replace("|<h3>(.*)</h3>|", "<a name='$1'></a><h3>$1</h3>", $content);
+		preg_match_all("|<h2.*>(.*)</h2>|", $content, $h2s, PREG_PATTERN_ORDER);
+		$content = preg_replace("|<h2.*>(.*)</h2>|", "<a name='$1'></a><h2>$1</h2>", $content);
+		$content = preg_replace("|<h3.*>(.*)</h3>|", "<a name='$1'></a><h3>$1</h3>", $content);
 		$h2s = $h2s[1];
 		$content = str_replace("\n", "::newline::", $content);
-		preg_match_all("|</h2>(.*)<h2>|U", $content, $h3s_contents, PREG_PATTERN_ORDER);
+		preg_match_all("|</h2.*>(.*)<h2>|U", $content, $h3s_contents, PREG_PATTERN_ORDER);
 		
 		//The following lines are really ugly for finding <h3> after the last </h2> please tidy it up if u know a better solution, and please let us know about it.
 	
@@ -81,9 +81,15 @@ class WikiPageController {
 			$h3s_contents[1] = array();
 		}
 		array_push($h3s_contents[1], $last_h2_pos);
+<<<<<<< HEAD
 		foreach ($h3s_contents[1] as $key => $h3s_content) {
 			preg_match_all("|<h3>(.*)</h3>|U", $h3s_content, $h3s[$key], PREG_PATTERN_ORDER);
 		}
+=======
+			foreach ($h3s_contents[1] as $key => $h3s_content) {
+				preg_match_all("|<h3.*>(.*)</h3>|U", $h3s_content, $h3s[$key], PREG_PATTERN_ORDER);
+			}
+>>>>>>> fixed TOC regex
 		$table = "<ol class='content_list'>";
 		foreach($h2s as $key => $h2) {
 			$table .= "<li><a href='#$h2'>".($key+1)." ".$h2."</a></li>";
