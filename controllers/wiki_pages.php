@@ -75,21 +75,17 @@ class WikiPageController {
 	
 		$last_h2_pos = explode('</h2>', $content);
 		$last_h2_pos = array_pop($last_h2_pos);
-		$last_h2_pos[1] = $last_h2_pos;
-		$h3s_contents[1][] = $last_h2_pos;
-		if (!is_array($h3s_contents[1])) {
+		if(!empty($last_h2_pos)){
+			$last_h2_pos[1] = $last_h2_pos;
+			$h3s_contents[1][] = $last_h2_pos;
+		}
+		if (empty($h3s_contents[1])) {
 			$h3s_contents[1] = array();
 		}
 		array_push($h3s_contents[1], $last_h2_pos);
-<<<<<<< HEAD
-		foreach ($h3s_contents[1] as $key => $h3s_content) {
-			preg_match_all("|<h3>(.*)</h3>|U", $h3s_content, $h3s[$key], PREG_PATTERN_ORDER);
-		}
-=======
 			foreach ($h3s_contents[1] as $key => $h3s_content) {
 				preg_match_all("|<h3.*>(.*)</h3>|U", $h3s_content, $h3s[$key], PREG_PATTERN_ORDER);
 			}
->>>>>>> fixed TOC regex
 		$table = "<ol class='content_list'>";
 		foreach($h2s as $key => $h2) {
 			$table .= "<li><a href='#$h2'>".($key+1)." ".$h2."</a></li>";
