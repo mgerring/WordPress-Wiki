@@ -10,10 +10,8 @@ class WikiFeed {
 	        load_plugin_textdomain('wordpress_wiki', '', $plugin_dir);
 	    }
 	
-	    global $wp_rewrite;
 	    add_feed('wiki', array($this,'create_feed'));
 	    add_action('generate_rewrite_rules', array($this,'feed_rewrite_rules'));
-	    $wp_rewrite->flush_rules();
 	}
 	
 	/**

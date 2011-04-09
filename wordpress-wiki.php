@@ -45,6 +45,9 @@ class WP_Wiki {
 		//include Wiki Parser class here so it doesn't get re-declared- fixes issue #4 on GitHub. Thanks Nexiom!
 		include(WPWIKI_FILE_PATH.'/lib/wpw_wikiparser.php');
 		
+		//Flush rewrite rules on activation to enable siteurl.com/wiki feed url. Can't use activation hook b/c it comes too late (after init)
+		if ( is_admin() && $_GET['activate'] && $_SERVER['SCRIPT_NAME'] == '/wp-admin/plugins.php' )
+			add_action( 'init', 'flush_rewrite_rules', 12 );
 		
 		
 		//Enables Wiki Pages
