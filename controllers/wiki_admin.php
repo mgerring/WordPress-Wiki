@@ -185,9 +185,7 @@ class WikiAdmin {
 			$id_we_are_changing = $_POST['wpw_change_wiki_id'];
 			$update_post = get_post($id_we_are_changing, 'ARRAY_A');
 			//The hackiest hack that ever hacked
-			if ( !empty($id_we_are_changing) )
-				$this->convert_pages_recursively($id_we_are_changing);
-				
+			$this->convert_pages_recursively($id_we_are_changing);
 			$update_post['post_type'] = 'wiki';
 			$update_post['post_status'] = 'publish';
 			$new = wp_update_post($update_post);
@@ -216,20 +214,15 @@ class WikiAdmin {
 	function add_custom_box() {
 	    //Wordpress 2.6 + -- this is the only one we need
 	    global $wp_version;
-	
 	    if ($wp_version < 3.0) {
-			add_meta_box( 'wpw_meta_box', __( 'Wiki Options', 'wp-wiki' ), 
+		    add_meta_box( 'wpw_meta_box', __( 'Wiki Options', 'wp-wiki' ), 
 		                array($this, 'meta_box_inner'), 'page', 'side', 'high' );
-			add_meta_box( 'wpw_meta_box', __( 'Wiki Options', 'wp-wiki' ), 
-				        array($this, 'meta_box_inner_pages'), 'post', 'side', 'high' );
 		} else {
-			$post_types = get_post_types(array('show_ui'=>true));
-			foreach($post_types as $pt) {
-				if ($pt == 'wiki')
-					continue;	
-				add_meta_box( 'wpw_meta_box', __( 'Wiki Options', 'wp-wiki' ), 
-			                array($this, 'meta_box_inner_pages'), $pt, 'side', 'high' );
-			}
+			add_meta_box( 'wpw_meta_box', __( 'Wiki Options', 'wp-wiki' ), 
+		                array($this, 'meta_box_inner'), 'wiki', 'side', 'high' );
+	
+			add_meta_box( 'wpw_meta_box', __( 'Wiki Options', 'wp-wiki' ), 
+		                array($this, 'meta_box_inner_pages'), 'page', 'side', 'high' );
 		}
 	}
 	   
@@ -267,7 +260,7 @@ class WikiAdmin {
 		echo '<input type="hidden" name="wpw_is_admin" value="1" />';
 		global $wp_version;
 	?>
-			<h5><?php _e('Wiki Page'); ?></h5>
+			<h5><?php _e('Wiki Page'); ?></h5>	
 			<input type="checkbox" name="wpw_change_to_wiki" value="true" />
 			<label for="wpw_change_to_wiki"><?php _e('Convert this page and all of its subpages to Wikis.'); ?></label>
 			<input type="hidden" name="wpw_change_wiki_id" value="<?php echo $_GET['post']; ?>" />
