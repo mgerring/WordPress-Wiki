@@ -185,7 +185,9 @@ class WikiAdmin {
 			$id_we_are_changing = $_POST['wpw_change_wiki_id'];
 			$update_post = get_post($id_we_are_changing, 'ARRAY_A');
 			//The hackiest hack that ever hacked
-			$this->convert_pages_recursively($id_we_are_changing);
+			if ( !empty($id_we_are_changing) )
+				$this->convert_pages_recursively($id_we_are_changing);
+				
 			$update_post['post_type'] = 'wiki';
 			$update_post['post_status'] = 'publish';
 			$new = wp_update_post($update_post);
