@@ -43,7 +43,8 @@ class WikiPostType {
 			'capability_type'=>'wiki_page',
 			'supports' => array('title','editor','author','thumbnail','excerpt','comments','revisions','custom-fields','page-attributes'),
 			'hierarchical' => true,
-			'rewrite' => array('slug' => 'wiki', 'with_front' => FALSE)
+			'rewrite' => array('slug' => 'wiki', 'with_front' => FALSE),
+                        'map_meta_cap' => true
 		);
 	}
 		
